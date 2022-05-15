@@ -20,10 +20,30 @@ import java.util.zip.ZipFile
 const val starDbDir = "stardb"
 
 class MainActivity : AppCompatActivity() {
+    private fun getAstapCliPath(): File {
+        return File(filesDir, "astap_cli")
+    }
+
+    private fun getStarDbDir(): File {
+        return File(getExternalFilesDir(null), "stardb")
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         println("FILESDIR: ${filesDir}")
+
+        val files = getAssets().list("")
+        val inputStream = getAssets().open("astap_cli")
+        val outputStream = FileOutputStream(getAstapCliPath())
+        inputStream.copyTo(outputStream)
+        inputStream.close()
+        outputStream.close()
+        if (!outputPath.setExecutable(true)) {
+            println("FILESDIR: cannot set ${getAstapCliPath()} executable")
+        } else {
+            println("FILESDIR: successfully set ${getAstapCliPath()} executable")
+        }
     }
 
     private fun newLauncher(cb: (Intent)->Unit) : ActivityResultLauncher<Intent> {
