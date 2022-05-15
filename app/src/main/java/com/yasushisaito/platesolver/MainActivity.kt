@@ -17,6 +17,8 @@ import java.io.InputStream
 import java.lang.Process
 import java.util.zip.ZipFile
 
+const val starDbDir = "stardb"
+
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,37 +51,46 @@ class MainActivity : AppCompatActivity() {
         println("URI: $uri")
     }*/
 
-    private val handler = Handler(Looper.getMainLooper()){ msg: Message ->
-        println("HANDLER $msg")
-        true
-    };
     private val installStarDbLauncher = newLauncher { intent: Intent ->
-        val uri: Uri = intent.data!!
-        println("install URI: $uri")
-        val input = contentResolver.openInputStream(uri)
-        if (input == null) {
-            println("stream null")
-            return@newLauncher
+        val eventHandler = Handler(Looper.getMainLooper()){ msg: Message ->
+            println("HANDLER $msg")
+            true
         }
-        val outputPath = File(this.getExternalFilesDir(null), "h17.zip")
-        val output = FileOutputStream(outputPath)
-        println("stardb: copying $uri to ${outputPath}!!!")
-        input.copyTo(output)
-        input.close()
-        output.close()
+        Thread(Runnable {
+            val uri: Uri = intent.data!!
+            println("install URI: $uri")
+            val input = contentResolver.openInputStream(uri)
+            if (input == null) {
+                println("stream null")
+                return@Runnable
+            }
+            val outputPath = File(this.getExternalFilesDir(null), "h17.zip")
+            val output = FileOutputStream(outputPath)
+            println("stardb: copying $uri to ${outputPath}!!!")
+            input.copyTo(output)
+            input.close()
+            output.close()
 
-        val proc: Process = Runtime.getRuntime().exec(
-            arrayOf("unzip", outputPath.path),
-            null,
-            this.getExternalFilesDir(null))
-        val exitCode = proc.waitFor()
-        if (exitCode != 0) {
-            AlertDialog.Builder(this)
-                .setTitle("unzip failed")
-                .setMessage("unzip $outputPath failed")
-                .setPositiveButton("OK") {  _, _ -> }.show()
-        }
-        println("stardb: unzipped to ${outputPath}!!!")
+            val starDbDir = File(this.getExternalFilesDir(null), starDbDir)
+            if (!starDbDir.mkdir()) {
+                println("mkdir $starDbDir failed")
+                return@Runnable
+            }
+
+            val proc: Process = Runtime.getRuntime().exec(
+                arrayOf("unzip", outputPath.path),
+                null,
+                starDbDir)
+            val exitCode = proc.waitFor()
+            if (exitCode != 0) {
+                AlertDialog.Builder(this)
+                    .setTitle("unzip failed")
+                    .setMessage("unzip $outputPath failed")
+                    .setPositiveButton("OK") {  _, _ -> }.show()
+            }
+            println("stardb: unzipped to ${outputPath}!!!")
+            eventHandler.dispatchMessage(Message.obtain(eventHandler, 0, "DoneDoneDone"))
+        }).start()
     }
     fun onInstallStarDb(@Suppress("UNUSED_PARAMETER") unused: View) {
         val intent = Intent()
