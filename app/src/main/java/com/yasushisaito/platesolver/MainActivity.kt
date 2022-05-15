@@ -5,9 +5,8 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.*
 import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.os.Environment
 import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -15,6 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
+import java.lang.Process
 import java.util.zip.ZipFile
 
 class MainActivity : AppCompatActivity() {
@@ -49,6 +49,10 @@ class MainActivity : AppCompatActivity() {
         println("URI: $uri")
     }*/
 
+    private val handler = Handler(Looper.getMainLooper()){ msg: Message ->
+        println("HANDLER $msg")
+        true
+    };
     private val installStarDbLauncher = newLauncher { intent: Intent ->
         val uri: Uri = intent.data!!
         println("install URI: $uri")
@@ -63,6 +67,19 @@ class MainActivity : AppCompatActivity() {
         input.copyTo(output)
         input.close()
         output.close()
+
+        val proc: Process = Runtime.getRuntime().exec(
+            arrayOf("unzip", outputPath.path),
+            null,
+            this.getExternalFilesDir(null))
+        val exitCode = proc.waitFor()
+        if (exitCode != 0) {
+            AlertDialog.Builder(this)
+                .setTitle("unzip failed")
+                .setMessage("unzip $outputPath failed")
+                .setPositiveButton("OK") {  _, _ -> }.show()
+        }
+        println("stardb: unzipped to ${outputPath}!!!")
     }
     fun onInstallStarDb(@Suppress("UNUSED_PARAMETER") unused: View) {
         val intent = Intent()
