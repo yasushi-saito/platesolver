@@ -2,28 +2,61 @@ package com.yasushisaito.platesolver
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.Context
+import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.os.*
-import androidx.appcompat.app.AppCompatActivity
 import android.view.View
+import android.webkit.MimeTypeMap
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.lang.Process
-import java.util.zip.ZipFile
+import java.security.MessageDigest
 
-const val starDbDir = "stardb"
+
+// Remove the extension from the given path.
+// If the path's filename is missing '.',
+// it returns the path itself.
+//
+// Example:
+//   removeExt(File(x, "bar.jpg") -> File(x, "bar")
+fun removeExt(path: File): File {
+    val name = path.name
+    val i = name.lastIndexOf('.')
+    if (i < 0) return path
+    return File(path.parent, name.substring(0, i))
+}
+
+fun replaceExt(path: File, ext: String): File {
+    return File(removeExt(path), ext)
+}
+
+// Computes a sha256 hex digest of the stream contents.
+fun inputStreamDigest(stream: InputStream): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    digest.reset()
+    val buf = ByteArray(1024 * 1024)
+    while (true) {
+        val n = stream.read(buf)
+        if (n < 0) break
+        digest.update(buf, 0, n)
+    }
+    val hash = digest.digest()
+    return hash.joinToString("") { byte -> "%02x".format(byte) }
+}
 
 class MainActivity : AppCompatActivity() {
+    // Reports the abs path of the astap_cli executable.
     private fun getAstapCliPath(): File {
         return File(filesDir, "astap_cli")
     }
 
+    // Reports the abs path of the directory containing star DB files, such as h17*.
     private fun getStarDbDir(): File {
         return File(getExternalFilesDir(null), "stardb")
     }
@@ -31,69 +64,87 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        println("FILESDIR: ${filesDir}")
+        println("FILESDIR:cli=${getAstapCliPath()}, db=${getStarDbDir()}")
 
-        val files = getAssets().list("")
-        val inputStream = getAssets().open("astap_cli")
-        val outputStream = FileOutputStream(getAstapCliPath())
-        inputStream.copyTo(outputStream)
-        inputStream.close()
-        outputStream.close()
-        if (!outputPath.setExecutable(true)) {
-            println("FILESDIR: cannot set ${getAstapCliPath()} executable")
+        val astapCliPath = getAstapCliPath()
+        assets.open("astap_cli").use { inputStream ->
+            FileOutputStream(astapCliPath).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+        if (!astapCliPath.setExecutable(true)) {
+            println("FILESDIR: cannot set $astapCliPath executable")
         } else {
-            println("FILESDIR: successfully set ${getAstapCliPath()} executable")
+            println("FILESDIR: successfully set $astapCliPath executable")
         }
     }
 
-    private fun newLauncher(cb: (Intent)->Unit) : ActivityResultLauncher<Intent> {
-        val launch = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult? ->
-            if (result?.resultCode != Activity.RESULT_OK) {
-                println("launch activity failed: $result")
-                return@registerForActivityResult
+    private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
+        val launch =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult? ->
+                if (result?.resultCode != Activity.RESULT_OK) {
+                    println("launch activity failed: $result")
+                    return@registerForActivityResult
+                }
+                cb(result.data!!)
             }
-            cb(result.data!!)
-        }
         return launch
     }
 
-    private val pickFileLauncher = newLauncher { intent: Intent ->
-        val uri: Uri = intent.data!!
-        println("URI: $uri")
+    private fun showErrorDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Error")
+            .setMessage(message)
+            .setPositiveButton("OK") { _, _ -> }.show()
     }
 
-/*    private val pickFileLaunch: = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult? ->
-        if (result?.resultCode != Activity.RESULT_OK) {
-            println("pick file: $result")
-            return@registerForActivityResult
+    private fun runAstap(imageUri: Uri) {
+        println("RUNASTAP: uri=$imageUri")
+        val cacheDir: File = cacheDir
+        val tmpImagePath = File.createTempFile("", ".jpg", cacheDir)
+        copyUriTo(imageUri, tmpImagePath)
+        // /data/user/0/com.yasushisaito.platesolver/files/astap_cli -f /sdcard/Download/m42.jpg -d /storage/emulated/0/Android/data/com.yasushisaito.platesolver/files/stardb -fov 2
+        val proc: Process = Runtime.getRuntime().exec(
+            arrayOf(
+                getAstapCliPath().path,
+                "-f", tmpImagePath.path,
+                "-d", getStarDbDir().path,
+                "-fov", "2"
+            ),
+            null,
+            getStarDbDir()
+        )
+        val exitCode = proc.waitFor()
+        println("ASTAP: exitcode=$exitCode")
+    }
+
+    private fun copyUriTo(uri: Uri, destPath: File) {
+        val inputStream = contentResolver.openInputStream(uri)
+        if (inputStream == null) {
+            println("could not open $uri")
+            return
         }
-        val intent: Intent = result.data!!
-        val uri: Uri = intent.data!!
-        println("URI: $uri")
-    }*/
+        inputStream.use {
+            FileOutputStream(destPath).use { outputStream ->
+                println("stardb: copying $uri to $destPath")
+                inputStream.copyTo(outputStream)
+            }
+        }
+    }
 
     private val installStarDbLauncher = newLauncher { intent: Intent ->
-        val eventHandler = Handler(Looper.getMainLooper()){ msg: Message ->
+        val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
             println("HANDLER $msg")
             true
         }
         Thread(Runnable {
             val uri: Uri = intent.data!!
             println("install URI: $uri")
-            val input = contentResolver.openInputStream(uri)
-            if (input == null) {
-                println("stream null")
-                return@Runnable
-            }
             val outputPath = File(this.getExternalFilesDir(null), "h17.zip")
-            val output = FileOutputStream(outputPath)
-            println("stardb: copying $uri to ${outputPath}!!!")
-            input.copyTo(output)
-            input.close()
-            output.close()
+            copyUriTo(uri, outputPath)
 
-            val starDbDir = File(this.getExternalFilesDir(null), starDbDir)
-            if (!starDbDir.mkdir()) {
+            val starDbDir = getStarDbDir()
+            if (!starDbDir.mkdirs()) {
                 println("mkdir $starDbDir failed")
                 return@Runnable
             }
@@ -101,18 +152,17 @@ class MainActivity : AppCompatActivity() {
             val proc: Process = Runtime.getRuntime().exec(
                 arrayOf("unzip", outputPath.path),
                 null,
-                starDbDir)
+                starDbDir
+            )
             val exitCode = proc.waitFor()
             if (exitCode != 0) {
-                AlertDialog.Builder(this)
-                    .setTitle("unzip failed")
-                    .setMessage("unzip $outputPath failed")
-                    .setPositiveButton("OK") {  _, _ -> }.show()
+                showErrorDialog("unzip $outputPath failed")
             }
             println("stardb: unzipped to ${outputPath}!!!")
             eventHandler.dispatchMessage(Message.obtain(eventHandler, 0, "DoneDoneDone"))
         }).start()
     }
+
     fun onInstallStarDb(@Suppress("UNUSED_PARAMETER") unused: View) {
         val intent = Intent()
             .setType("application/zip")
@@ -141,6 +191,23 @@ class MainActivity : AppCompatActivity() {
             //val appSpecificExternalDir = File(context.getExternalFilesDir(null), filename)
         }
 */
+    }
+
+
+    private val pickFileLauncher = newLauncher { intent: Intent ->
+        val uri: Uri = intent.data!!
+        val resolver: ContentResolver = contentResolver
+        val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolver.getType(uri))
+        val inputStream = resolver.openInputStream(uri)
+        if (inputStream == null) {
+            showErrorDialog("cannot open $uri")
+            return@newLauncher
+        }
+        val sha256 = inputStream.use {
+            inputStreamDigest(inputStream)
+        }
+        val copyPath = File(this.getExternalFilesDir(null),"${sha256}.$ext")
+        copyUriTo(uri, copyPath)
     }
 
     fun onPickFile(@Suppress("UNUSED_PARAMETER") unused: View) {
