@@ -9,9 +9,13 @@ import org.junit.Assert.*
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
-class ExampleUnitTest {
+class FitsTest {
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun read() {
+        val stream =javaClass.classLoader.getResource("m42.wcs").openStream()
+        stream.use {
+            val fits = Fits(stream)
+            assertEquals(8.0, fits.getDouble("BITPIX"), 1e-6)
+        }
     }
 }

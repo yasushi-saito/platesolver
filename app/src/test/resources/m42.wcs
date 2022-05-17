@@ -1,0 +1,45 @@
+SIMPLE  =                    T / FITS header                                    
+BITPIX  =                    8 / Bits per entry                                 
+NAXIS   =                    2 / Number of dimensions                           
+NAXIS3  =                    3 / length of z axis (mostly colors)               
+EQUINOX =               2000.0 / Equinox of coordinates                         
+DATAMIN =                    0 / Minimum data value                             
+DATAMAX =                  255 / Maximum data value                             
+BZERO   =                  0.0 / Physical_value = BZERO + BSCALE * array_value  
+BSCALE  =                  1.0 / Physical_value = BZERO + BSCALE * array_value  
+END                                                                             
+SIMPLE  =                    T / FITS header                                    
+BITPIX  =                    8 / Bits per entry                                 
+NAXIS   =                    0 / Number of dimensions                           
+NAXIS3  =                    3 / length of z axis (mostly colors)               
+EQUINOX =               2000.0 / Equinox of coordinates                         
+DATAMIN =                    0 / Minimum data value                             
+DATAMAX =                65535 / Maximum data value                             
+BZERO   =                  0.0 / Physical_value = BZERO + BSCALE * array_value  
+BSCALE  =                  1.0 / Physical_value = BZERO + BSCALE * array_value  
+DATE-OBS= '2022-05-16T19:51:31'
+COMMENT 1   Written by ASTAP, Astrometric STAcking Program. www.hnsky.org
+CTYPE1  = 'RA---TAN'           / first parameter RA  ,  projection TANgential   
+CTYPE2  = 'DEC--TAN'           / second parameter DEC,  projection TANgential   
+CUNIT1  = 'deg     '           / Unit of coordinates                            
+CRPIX1  =  3.012500000000E+003 / X of reference pixel                           
+CRPIX2  =  2.012500000000E+003 / Y of reference pixel                           
+CRVAL1  =  8.406417272488E+001 / RA of reference pixel (deg)                    
+CRVAL2  = -4.727149246947E+000 / DEC of reference pixel (deg)                   
+CDELT1  = -6.082080771536E-004 / X pixel size (deg)                             
+CDELT2  =  6.081489664731E-004 / Y pixel size (deg)                             
+CROTA1  =  9.179810128602E+001 / Image twist of X axis        (deg)             
+CROTA2  =  9.183513067877E+001 / Image twist of Y axis        (deg)             
+CD1_1   =  1.947701011030E-005 / CD matrix to convert (x,y) to (Ra, Dec)        
+CD1_2   = -6.078495143673E-004 / CD matrix to convert (x,y) to (Ra, Dec)        
+CD2_1   = -6.078961352008E-004 / CD matrix to convert (x,y) to (Ra, Dec)        
+CD2_2   = -1.908227727009E-005 / CD matrix to convert (x,y) to (Ra, Dec)        
+PLTSOLVD=                    T / ASTAP internal solver      
+COMMENT 7 Solved in 18.7 sec Offset was 84.1d.
+WARNING = 'Warning scale was inaccurate! Set FOV=2.45d, scale=2.2"'
+COMMENT cmdline:/data/user/0/com.yasushisaito.platesolver/files/astap_cli -f /st
+COMMENT orage/emulated/0/Android/data/com.yasushisaito.platesolver/files/04d4bf8
+COMMENT 85a51d5fcbae9b6f5af5f7162082d7e748f2d084ce081058b20dd49a6.jpg -d /storag
+COMMENT e/emulated/0/Android/data/com.yasushisaito.platesolver/files/stardb -fov
+COMMENT  2
+END                                                                             

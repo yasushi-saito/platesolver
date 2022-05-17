@@ -13,11 +13,15 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.lang.Process
 import java.security.MessageDigest
 
+const val EVENT_MESSAGE = 0
+const val EVENT_OK = 1
+const val EVENT_ERROR = 2
 
 // Remove the extension from the given path.
 // If the path's filename is missing '.',
@@ -29,11 +33,13 @@ fun removeExt(path: File): File {
     val name = path.name
     val i = name.lastIndexOf('.')
     if (i < 0) return path
-    return File(path.parent, name.substring(0, i))
+    val basename = name.substring(0, i)
+    return File(path.parent, basename)
 }
 
 fun replaceExt(path: File, ext: String): File {
-    return File(removeExt(path), ext)
+    val basename = removeExt(path)
+    return File(basename.parentFile, basename.name + ext)
 }
 
 // Computes a sha256 hex digest of the stream contents.
@@ -98,27 +104,36 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("OK") { _, _ -> }.show()
     }
 
-    private fun runAstap(imageUri: Uri) {
-        println("RUNASTAP: uri=$imageUri")
-        val cacheDir: File = cacheDir
-        val tmpImagePath = File.createTempFile("", ".jpg", cacheDir)
-        copyUriTo(imageUri, tmpImagePath)
-        // /data/user/0/com.yasushisaito.platesolver/files/astap_cli -f /sdcard/Download/m42.jpg -d /storage/emulated/0/Android/data/com.yasushisaito.platesolver/files/stardb -fov 2
-        val proc: Process = Runtime.getRuntime().exec(
-            arrayOf(
-                getAstapCliPath().path,
-                "-f", tmpImagePath.path,
-                "-d", getStarDbDir().path,
-                "-fov", "2"
-            ),
-            null,
-            getStarDbDir()
+    private fun runAstap(imagePath: File) {
+        val cmdline = arrayOf(
+            getAstapCliPath().path,
+            "-f", imagePath.path,
+            "-d", getStarDbDir().path,
+            "-fov", "2"
         )
+        println("RUNASTAP: cmdline=${cmdline.contentToString()}")
+        val proc: Process = Runtime.getRuntime().exec(cmdline, null, imagePath.parentFile)
+        val readOutputs = fun(stream: InputStream) {
+            Thread {
+                val buf = ByteArray(8192)
+                while (true) {
+                    val len = stream.read(buf)
+                    if (len < 0) break
+                    System.out.write(buf, 0, len)
+                }
+            }.start()
+        }
+        readOutputs(proc.inputStream)
+        readOutputs(proc.errorStream)
         val exitCode = proc.waitFor()
-        println("ASTAP: exitcode=$exitCode")
+        if (exitCode != 0) {
+            println("RUNASTAP: exitcode=$exitCode")
+            return
+        }
     }
 
     private fun copyUriTo(uri: Uri, destPath: File) {
+        println("Copying $uri to $destPath")
         val inputStream = contentResolver.openInputStream(uri)
         if (inputStream == null) {
             println("could not open $uri")
@@ -130,6 +145,7 @@ class MainActivity : AppCompatActivity() {
                 inputStream.copyTo(outputStream)
             }
         }
+        println("Copied $uri to $destPath")
     }
 
     private val installStarDbLauncher = newLauncher { intent: Intent ->
@@ -195,19 +211,68 @@ class MainActivity : AppCompatActivity() {
 
 
     private val pickFileLauncher = newLauncher { intent: Intent ->
-        val uri: Uri = intent.data!!
-        val resolver: ContentResolver = contentResolver
-        val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolver.getType(uri))
-        val inputStream = resolver.openInputStream(uri)
-        if (inputStream == null) {
-            showErrorDialog("cannot open $uri")
-            return@newLauncher
+        val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
+            when (msg.what) {
+                EVENT_MESSAGE -> {
+
+                }
+                EVENT_OK -> {
+
+                }
+                EVENT_ERROR -> {
+
+                }
+                else -> {
+                    throw Error("Invalid message $msg")
+                }
+            }
+            println("HANDLER $msg")
+            true
         }
-        val sha256 = inputStream.use {
-            inputStreamDigest(inputStream)
+        val dispatchMessage = fun(what: Int, message: String) {
+            eventHandler.dispatchMessage(
+                Message.obtain(eventHandler, what, message)
+            )
         }
-        val copyPath = File(this.getExternalFilesDir(null),"${sha256}.$ext")
-        copyUriTo(uri, copyPath)
+        println("PICKFILE start")
+        Thread(Runnable {
+            try {
+                println("PICKFILE start2")
+                val uri: Uri = intent.data!!
+                dispatchMessage(EVENT_MESSAGE, "copying file")
+                val resolver: ContentResolver = contentResolver
+                val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolver.getType(uri))
+                val inputStream = resolver.openInputStream(uri)
+                if (inputStream == null) {
+                    showErrorDialog("cannot open $uri")
+                    return@Runnable
+                }
+                val sha256 = inputStream.use {
+                    inputStreamDigest(inputStream)
+                }
+                val copyPath = File(this.getExternalFilesDir(null), "${sha256}.$ext")
+                if (!copyPath.exists()) {
+                    copyUriTo(uri, copyPath)
+                    dispatchMessage(EVENT_MESSAGE, "copied file")
+                } else {
+                    dispatchMessage(EVENT_MESSAGE, "file already exists; skipping copying")
+                }
+                val wcsPath = replaceExt(copyPath, ".wcs")
+                if (!wcsPath.exists()) {
+                    runAstap(copyPath)
+                    if (!wcsPath.exists()) {
+                        println("RUNASTAP: file $wcsPath does not exist")
+                        return@Runnable
+                    }
+                }
+                val wcs = FileInputStream(wcsPath).use { stream ->
+                    Fits(stream)
+                }
+                println("RUNASTAP: wcs=$wcs")
+            } finally {
+                dispatchMessage(EVENT_OK, "all done")
+            }
+        }).start()
     }
 
     fun onPickFile(@Suppress("UNUSED_PARAMETER") unused: View) {
