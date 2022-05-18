@@ -4,8 +4,12 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentResolver
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.*
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.view.View
 import android.webkit.MimeTypeMap
 import androidx.activity.result.ActivityResult
@@ -16,8 +20,11 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
-import java.lang.Process
 import java.security.MessageDigest
+import java.util.concurrent.locks.Lock
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
+
 
 const val EVENT_MESSAGE = 0
 const val EVENT_OK = 1
@@ -67,22 +74,44 @@ class MainActivity : AppCompatActivity() {
         return File(getExternalFilesDir(null), "stardb")
     }
 
+    private val initializedMu = ReentrantLock()
+    private var initialized = false
+    private lateinit var cachedDeepSkyObjects: DeepSkyCsv
+
+    private fun getDeepSkyObjects() : DeepSkyCsv {
+        initializedMu.withLock {
+            if (!initialized) throw Error("blah")
+            return cachedDeepSkyObjects
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         println("FILESDIR:cli=${getAstapCliPath()}, db=${getStarDbDir()}")
 
-        val astapCliPath = getAstapCliPath()
-        assets.open("astap_cli").use { inputStream ->
-            FileOutputStream(astapCliPath).use { outputStream ->
-                inputStream.copyTo(outputStream)
+        Thread(Runnable {
+            var csv: DeepSkyCsv
+            assets.open("deep_sky.csv").use { inputStream ->
+                csv = DeepSkyCsv(inputStream)
             }
-        }
-        if (!astapCliPath.setExecutable(true)) {
-            println("FILESDIR: cannot set $astapCliPath executable")
-        } else {
-            println("FILESDIR: successfully set $astapCliPath executable")
-        }
+
+            val astapCliPath = getAstapCliPath()
+            assets.open("astap_cli").use { inputStream ->
+                FileOutputStream(astapCliPath).use { outputStream ->
+                    inputStream.copyTo(outputStream)
+                }
+            }
+            if (!astapCliPath.setExecutable(true)) {
+                println("FILESDIR: cannot set $astapCliPath executable")
+            } else {
+                println("FILESDIR: successfully set $astapCliPath executable")
+            }
+            println("initialized")
+            initializedMu.withLock {
+                initialized = true
+                cachedDeepSkyObjects = csv
+            }
+        }).start()
     }
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
@@ -234,7 +263,6 @@ class MainActivity : AppCompatActivity() {
                 Message.obtain(eventHandler, what, message)
             )
         }
-        println("PICKFILE start")
         Thread(Runnable {
             try {
                 println("PICKFILE start2")
@@ -265,10 +293,38 @@ class MainActivity : AppCompatActivity() {
                         return@Runnable
                     }
                 }
-                val wcs = FileInputStream(wcsPath).use { stream ->
-                    Fits(stream)
+                FileInputStream(wcsPath).use { wcsStream ->
+                    val wcs = Wcs(wcsStream)
+                    val dim = wcs.getImageDimension()
+                    var minRa = Double.MAX_VALUE
+                    var maxRa = -Double.MAX_VALUE
+                    var minDec = Double.MAX_VALUE
+                    var maxDec = -Double.MAX_VALUE
+
+                    val updateRange = fun (wcs: WcsCoordinate) {
+                        if (minRa > wcs.ra) minRa = wcs.ra
+                        if (maxRa < wcs.ra) maxRa = wcs.ra
+                        if (minDec > wcs.dec) minDec = wcs.dec
+                        if (maxDec < wcs.dec) maxDec = wcs.dec
+                    }
+                    val wcs00 = wcs.pixelToWcs(PixelCoordinate(0.0, 0.0))
+                    updateRange(wcs00)
+                    val wcs01 = wcs.pixelToWcs(PixelCoordinate(0.0, dim.height.toDouble()))
+                    updateRange(wcs01)
+                    val wcs10 = wcs.pixelToWcs(PixelCoordinate(dim.width.toDouble(), 0.0))
+                    updateRange(wcs10)
+                    val wcs11 = wcs.pixelToWcs(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
+                    updateRange(wcs11)
+                    /*println("RUNASTAP: 00=${wcs00}")
+                    println("RUNASTAP: 01=${wcs01}")
+                    println("RUNASTAP: 10=${wcs10}")
+                    println("RUNASTAP: 01=${wcs11}")*/
+                    val matchedStars = getDeepSkyObjects().findInRange(minRa, minDec, maxRa, maxDec)
+                    for (m in matchedStars) {
+                        val px = wcs.wcsToPixel(m.wcs)
+                        println("RUNASTAP: Match $m at px=$px")
+                    }
                 }
-                println("RUNASTAP: wcs=$wcs")
             } finally {
                 dispatchMessage(EVENT_OK, "all done")
             }
