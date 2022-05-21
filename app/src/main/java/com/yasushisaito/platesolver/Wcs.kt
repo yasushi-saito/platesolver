@@ -7,16 +7,16 @@ import java.text.ParseException
 
 class Wcs(stream: InputStream) {
     companion object {
-        private const val CRPIX1 = "CRPIX1" // X of the reference pixel
-        private const val CRPIX2 = "CRPIX2" // Y of the reference pixel
-        private const val CRVAL1 = "CRVAL1" // RA of reference pixel (deg)
-        private const val CRVAL2 = "CRVAL2" // DEC of reference pixel (deg)
+        const val CRPIX1 = "CRPIX1" // X of the reference pixel
+        const val CRPIX2 = "CRPIX2" // Y of the reference pixel
+        const val CRVAL1 = "CRVAL1" // RA of reference pixel (deg)
+        const val CRVAL2 = "CRVAL2" // DEC of reference pixel (deg)
         private const val CDELT1 = "CDELT1" // X pixel size (deg)
         private const val CDELT2 = "CDELT2" // Y pixel size (deg)
-        private const val CD1_1 = "CD1_1" // CD matrix to convert (x,y) to (Ra, Dec)
-        private const val CD1_2 = "CD1_2" // CD matrix to convert (x,y) to (Ra, Dec)
-        private const val CD2_1 = "CD2_1" // CD matrix to convert (x,y) to (Ra, Dec)
-        private const val CD2_2 = "CD2_2" // CD matrix to convert (x,y) to (Ra, Dec)
+         const val CD1_1 = "CD1_1" // CD matrix to convert (x,y) to (Ra, Dec)
+         const val CD1_2 = "CD1_2" // CD matrix to convert (x,y) to (Ra, Dec)
+         const val CD2_1 = "CD2_1" // CD matrix to convert (x,y) to (Ra, Dec)
+         const val CD2_2 = "CD2_2" // CD matrix to convert (x,y) to (Ra, Dec)
     }
     // Denotes the image dimension (pixel width, pixel height).
     data class ImageDimension(val width: Int, val height: Int)
@@ -32,16 +32,6 @@ class Wcs(stream: InputStream) {
     init {
         parse(stream)
     }
-
-    private val refPixel = PixelCoordinate(getDouble(CRPIX1), getDouble(CRPIX2))
-    private val refWcs = WcsCoordinate(getDouble(CRVAL1), getDouble(CRVAL2))
-    private val pixelToWcs = Matrix22(
-        getDouble(CD1_1), getDouble(CD1_2),
-        getDouble(CD2_1), getDouble(CD2_2)
-    )
-    private val wcsToPixel = pixelToWcs.invert()
-    // refPixel is the middle point of the image, so double them to get the image size
-    private val imageDimension = ImageDimension((refPixel.x*2).toInt(), (refPixel.y*2).toInt())
 
     fun getBool(key: String): Boolean {
         for (f in bools) {
@@ -68,6 +58,7 @@ class Wcs(stream: InputStream) {
         return warnings
     }
 
+    /*
     // Convert pixel coordinate to WCS.
     fun pixelToWcs(p: PixelCoordinate): WcsCoordinate {
         val v = pixelToWcs.mult(Vector2(
@@ -83,9 +74,7 @@ class Wcs(stream: InputStream) {
             pv.x + refPixel.x,
             (imageDimension.height - (pv.y + refPixel.y)))
     }
-
-    // Get the size of the user-provided image file (jpg, png, etc).
-    fun getImageDimension(): ImageDimension { return imageDimension }
+*/
 
     private fun parse(stream: InputStream) {
         val numOrBoolRe = Regex("^([A-Z0-9-_]+)\\s*=\\s*([0-9.+-eETF]+)")
