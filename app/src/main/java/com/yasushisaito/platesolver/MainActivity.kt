@@ -4,24 +4,29 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.ContentResolver
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.view.MenuItem
 import android.view.View
 import android.webkit.MimeTypeMap
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.fragment.app.Fragment
+import com.google.android.material.navigation.NavigationView
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
-import java.util.concurrent.locks.Lock
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -63,7 +68,7 @@ fun inputStreamDigest(stream: InputStream): String {
     return hash.joinToString("") { byte -> "%02x".format(byte) }
 }
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     // Reports the abs path of the astap_cli executable.
     private fun getAstapCliPath(): File {
         return File(filesDir, "astap_cli")
@@ -87,7 +92,27 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        println("FILESDIR:cli=${getAstapCliPath()}, db=${getStarDbDir()}")
+
+        val toolbar = findViewById<View>(R.id.toolbar) as Toolbar
+        setSupportActionBar(toolbar)
+        val drawer = findViewById<View>(R.id.layout_drawer) as DrawerLayout
+        val toggle = ActionBarDrawerToggle(
+            this,
+            drawer,
+            toolbar,
+            R.string.nav_open_drawer,
+            R.string.nav_close_drawer
+        )
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
+
+        val navigationView = findViewById<View>(R.id.nav_view) as NavigationView
+        navigationView.setNavigationItemSelectedListener(this)
+
+        val fragment = SetupFragment()
+        val ft = supportFragmentManager.beginTransaction()
+        ft.add(R.id.content_frame, fragment)
+        ft.commit()
 
         Thread(Runnable {
             var csv: DeepSkyCsv
@@ -213,31 +238,7 @@ class MainActivity : AppCompatActivity() {
             .setType("application/zip")
             .setAction(Intent.ACTION_GET_CONTENT)
         installStarDbLauncher.launch(intent)
-/*
-        println("install stardb")
-        val context: Context = this
-        val fd = ZipFile(Environment.getExternalStorageDirectory().path + "/Download/h17.zip")
-        val dbDir = File(context.getExternalFilesDir(null), "h17")
-        if (!dbDir.mkdirs()) {
-            AlertDialog.Builder(this)
-                .setTitle("Cannot create directory")
-                .setMessage("Create directory $dbDir")
-                .setPositiveButton("OK") {_, _ ->}.show()
-            return
-        }
-        AlertDialog.Builder(this)
-            .setTitle("CREATE DIR!!")
-            .setMessage("Created directory $dbDir")
-            .setPositiveButton("OK") {  _, _ -> }.show()
-
-        for (e in fd.entries()) {
-            println("ZIP FILENAME: ${e.name}")
-            //val in = fd.getInputStream(e)
-            //val appSpecificExternalDir = File(context.getExternalFilesDir(null), filename)
-        }
-*/
     }
-
 
     private val pickFileLauncher = newLauncher { intent: Intent ->
         val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
@@ -337,5 +338,24 @@ class MainActivity : AppCompatActivity() {
             .setType("*/*")
             .setAction(Intent.ACTION_GET_CONTENT)
         pickFileLauncher.launch(intent)
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        val id: Int = item.getItemId()
+        println("NAVITEM: $id")
+        var fragment: Fragment? = null
+        when (id) {
+            R.id.nav_result -> fragment = ResultFragment()
+            R.id.nav_setup -> fragment = SetupFragment()
+            else -> throw Error("Invalid menu item: ${id}")
+        }
+        if (fragment != null) {
+            val ft = supportFragmentManager.beginTransaction()
+            ft.replace(R.id.content_frame, fragment)
+            ft.commit()
+        }
+        val drawer = findViewById<View>(R.id.layout_drawer) as DrawerLayout
+        drawer.closeDrawer(GravityCompat.START)
+        return true
     }
 }

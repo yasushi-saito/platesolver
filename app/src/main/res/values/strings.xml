@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">plate solver</string>
+    <string name="nav_open_drawer">Open navigation drawer</string>
+    <string name="nav_close_drawer">Close navigation drawer</string>
 </resources>
