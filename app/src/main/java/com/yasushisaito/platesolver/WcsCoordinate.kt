@@ -13,3 +13,10 @@ data class WcsCoordinate(val ra: Double, val dec: Double) {
     }
 }
 
+fun rightAscensionDegreesToHMS(ra: Double): String {
+    val hour = (ra / 30.0).toInt()
+    var remainder = ra  - hour * 30
+    val min = (remainder * 2).toInt()
+    val second = remainder - min / 2
+    return "%02dh%02dm%.5f".format(hour, min, second)
+}

@@ -13,11 +13,12 @@ class Wcs(stream: InputStream) {
         const val CRVAL2 = "CRVAL2" // DEC of reference pixel (deg)
         private const val CDELT1 = "CDELT1" // X pixel size (deg)
         private const val CDELT2 = "CDELT2" // Y pixel size (deg)
-         const val CD1_1 = "CD1_1" // CD matrix to convert (x,y) to (Ra, Dec)
-         const val CD1_2 = "CD1_2" // CD matrix to convert (x,y) to (Ra, Dec)
-         const val CD2_1 = "CD2_1" // CD matrix to convert (x,y) to (Ra, Dec)
-         const val CD2_2 = "CD2_2" // CD matrix to convert (x,y) to (Ra, Dec)
+        const val CD1_1 = "CD1_1" // CD matrix to convert (x,y) to (Ra, Dec)
+        const val CD1_2 = "CD1_2" // CD matrix to convert (x,y) to (Ra, Dec)
+        const val CD2_1 = "CD2_1" // CD matrix to convert (x,y) to (Ra, Dec)
+        const val CD2_2 = "CD2_2" // CD matrix to convert (x,y) to (Ra, Dec)
     }
+
     // Denotes the image dimension (pixel width, pixel height).
     data class ImageDimension(val width: Int, val height: Int)
     data class BoolKey(val key: String, val value: Boolean)

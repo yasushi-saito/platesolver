@@ -9,7 +9,7 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/edittext_imagename"
+        android:id="@+id/text_result_imagename"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="imagename"
@@ -89,7 +89,7 @@
         app:layout_constraintGuide_begin="234dp" />
 
     <TextView
-        android:id="@+id/edittext_imagedimension"
+        android:id="@+id/text_result_imagedimension"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="dimension"
@@ -97,7 +97,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/edittext_imagelastupdate"
+        android:id="@+id/text_result_imagelastupdate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="lastupdate"
@@ -113,7 +113,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/edittext_corner00"
+        android:id="@+id/text_corner00"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -125,7 +125,7 @@
         app:layout_constraintTop_toBottomOf="@+id/label_corners" />
 
     <TextView
-        android:id="@+id/edittext_corner01"
+        android:id="@+id/text_corner01"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
@@ -134,28 +134,28 @@
         app:layout_constraintEnd_toStartOf="@+id/guideline2"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1"
-        app:layout_constraintTop_toBottomOf="@+id/edittext_center" />
+        app:layout_constraintTop_toBottomOf="@+id/text_center" />
 
     <TextView
-        android:id="@+id/edittext_corner10"
+        android:id="@+id/text_corner10"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:gravity="start|top"
         android:text="0.0 / 0.0"
-        app:layout_constraintBaseline_toBaselineOf="@+id/edittext_corner00"
+        app:layout_constraintBaseline_toBaselineOf="@+id/text_corner00"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/edittext_corner11"
+        android:id="@+id/text_corner11"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:gravity="start|top"
         android:text="0.0 / 0.0"
-        app:layout_constraintBaseline_toBaselineOf="@+id/edittext_corner01"
+        app:layout_constraintBaseline_toBaselineOf="@+id/text_corner01"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/edittext_center"
+        android:id="@+id/text_center"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
@@ -163,6 +163,6 @@
         android:text="0.0 / 0.0"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
-        app:layout_constraintTop_toBottomOf="@+id/edittext_corner00" />
+        app:layout_constraintTop_toBottomOf="@+id/text_corner00" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

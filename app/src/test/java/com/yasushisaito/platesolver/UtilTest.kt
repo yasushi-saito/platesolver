@@ -14,4 +14,15 @@ class UtilTest {
             assertEquals(String(stream.readBytes()), "hellohello")
         }
     }
+
+    @Test
+    fun fovToLens() {
+        val roundtrip = fun (lens: Double) {
+            val fov = focalLengthToFov(lens)
+            assertEquals(fovToFocalLength(fov), lens, 1e-3)
+        }
+        roundtrip(100.0)
+        roundtrip(10.0)
+        roundtrip(360.0)
+    }
 }

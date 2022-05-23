@@ -30,7 +30,7 @@ class WcsTest {
                 wcs.getDouble(Wcs.CD2_1), wcs.getDouble(Wcs.CD2_2)
             )
             val solution = Solution(refPixel=refPixel,
-                imagePath="foo",
+                params=SolverParameters(imagePath="foo", fovDeg=2.0),
                 refWcs=refWcs,
                 imageDimension = dim,
                 pixelToWcsMatrix = pixelToWcsMatrix,
@@ -50,7 +50,7 @@ class WcsTest {
             assertEquals(-6.505, wcsCoord.dec, 1e-3)
 
             testRoundTrip(solution, 0.0, 0.0)
-            testRoundTrip(solution, 100.0, 100.0);
+            testRoundTrip(solution, 100.0, 100.0)
             testRoundTrip(solution, dim.width.toDouble(), dim.height.toDouble())
         }
     }

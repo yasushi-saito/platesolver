@@ -41,6 +41,10 @@ data class Solution(
 ) {
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 
+    fun isValid(): Boolean {
+        if (params == null) return false
+        return true
+    }
     // Convert pixel coordinate to WCS.
     fun pixelToWcs(p: PixelCoordinate): WcsCoordinate {
         return convertPixelToWcs(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
