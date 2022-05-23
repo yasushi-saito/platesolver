@@ -31,11 +31,6 @@ import kotlin.concurrent.withLock
 import java.io.DataOutputStream as DataOutputStream1
 
 
-const val EVENT_MESSAGE = 0
-const val EVENT_OK = 1
-const val EVENT_ERROR = 2
-const val EVENT_SHOW_SOLUTION = 3
-const val TAG = "MainActivity"
 // Remove the extension from the given path.
 // If the path's filename is missing '.',
 // it returns the path itself.
@@ -82,25 +77,8 @@ fun inputStreamDigest(stream: InputStream): String {
 }
 
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
-    // Reports the abs path of the astap_cli executable.
-    private fun getAstapCliPath(): File {
-        return File(filesDir, "astap_cli")
-    }
-
-    // Reports the abs path of the directory containing star DB files, such as h17*.
-    private fun getStarDbDir(): File {
-        return File(getExternalFilesDir(null), "stardb")
-    }
-
-    private val initializedMu = ReentrantLock()
-    private var initialized = false
-    private lateinit var cachedDeepSkyObjects: DeepSkyCsv
-
-    private fun getDeepSkyObjects(): DeepSkyCsv {
-        initializedMu.withLock {
-            if (!initialized) throw Error("blah")
-            return cachedDeepSkyObjects
-        }
+    companion object {
+        const val TAG = "MainActivity"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,13 +106,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         ft.add(R.id.content_frame, fragment)
         ft.commit()
 
-        Thread(Runnable {
-            var csv: DeepSkyCsv
-            assets.open("deep_sky.csv").use { inputStream ->
-                csv = DeepSkyCsv(inputStream)
-            }
+        DeepSkyCsv.startLoadSingleton(assets)
 
-            val astapCliPath = getAstapCliPath()
+        Thread(Runnable {
+            val astapCliPath = getAstapCliPath(this)
             assets.open("astap_cli").use { inputStream ->
                 FileOutputStream(astapCliPath).use { outputStream ->
                     inputStream.copyTo(outputStream)
@@ -146,10 +121,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 println("FILESDIR: successfully set $astapCliPath executable")
             }
             Log.d(TAG, "initialized")
-            initializedMu.withLock {
-                initialized = true
-                cachedDeepSkyObjects = csv
-            }
         }).start()
     }
 
@@ -172,54 +143,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .setPositiveButton("OK") { _, _ -> }.show()
     }
 
-    private fun runAstap(imagePath: File, fovDeg: Double) {
-        val cmdline = arrayOf(
-            getAstapCliPath().path,
-            "-f", imagePath.path,
-            "-d", getStarDbDir().path,
-            "-fov", fovDeg.toString(),
-        )
-        Log.d(TAG, "runastap: cmdline=${cmdline.contentToString()}")
-        val proc: Process = Runtime.getRuntime().exec(cmdline, null, imagePath.parentFile)
-        val readOutputs = fun(stream: InputStream) {
-            Thread {
-                val buf = ByteArray(8192)
-                while (true) {
-                    val len = stream.read(buf)
-                    if (len < 0) break
-                    System.out.write(buf, 0, len)
-                }
-            }.start()
-        }
-        readOutputs(proc.inputStream)
-        readOutputs(proc.errorStream)
-        val exitCode = proc.waitFor()
-        if (exitCode != 0) {
-            Log.d(TAG, "runastap: exitcode=$exitCode")
-            return
-        }
-    }
-
-    private fun copyUriTo(uri: Uri, destPath: File) {
-        val inputStream = contentResolver.openInputStream(uri)
-        if (inputStream == null) {
-            return
-        }
-        inputStream.use {
-            FileOutputStream(destPath).use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
-        }
-    }
-
     private val installStarDbLauncher = newLauncher { intent: Intent ->
         Thread(Runnable {
             val uri: Uri = intent.data!!
             println("install URI: $uri")
             val outputPath = File(this.getExternalFilesDir(null), "h17.zip")
-            copyUriTo(uri, outputPath)
+            copyUriTo(contentResolver, uri, outputPath)
 
-            val starDbDir = getStarDbDir()
+            val starDbDir = getStarDbDir(this)
             if (!starDbDir.mkdirs()) {
                 println("mkdir $starDbDir failed")
                 return@Runnable
@@ -235,7 +166,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 showErrorDialog("unzip $outputPath failed")
             }
             println("stardb: unzipped to ${outputPath}!!!")
-            eventHandler.dispatchMessage(Message.obtain(eventHandler, 0, "DoneDoneDone"))
         }).start()
     }
 
@@ -244,145 +174,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .setType("application/zip")
             .setAction(Intent.ACTION_GET_CONTENT)
         installStarDbLauncher.launch(intent)
-    }
-
-    val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
-        println("EVENTHANDLER: what=${msg.what} msg=${msg.obj}")
-        when (msg.what) {
-            EVENT_MESSAGE -> {
-
-            }
-            EVENT_OK -> {
-
-            }
-            EVENT_ERROR -> {
-
-            }
-            EVENT_SHOW_SOLUTION -> startSolutionFragment(msg.obj as String)
-            else -> throw Error("Invalid message $msg")
-        }
-        println("HANDLER $msg")
-        true
-    }
-
-    private val pickFileLauncher = newLauncher { intent: Intent ->
-        val dispatchMessage = fun(what: Int, message: String) {
-            eventHandler.dispatchMessage(
-                Message.obtain(eventHandler, what, message)
-            )
-        }
-        Thread(Runnable {
-            try {
-                val fovDeg: Double = 2.0
-                val uri: Uri = intent.data!!
-                dispatchMessage(EVENT_MESSAGE, "copying file")
-                val resolver: ContentResolver = contentResolver
-                val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolver.getType(uri))
-                val inputStream = resolver.openInputStream(uri)
-                if (inputStream == null) {
-                    showErrorDialog("cannot open $uri")
-                    return@Runnable
-                }
-                val sha256 = inputStream.use {
-                    inputStreamDigest(inputStream)
-                }
-                val imagePath = File(this.getExternalFilesDir(null), "${sha256}.$ext")
-                val solverParams = SolverParameters(imagePath.absolutePath, fovDeg)
-                val solutionJsonPath =
-                    File(this.getExternalFilesDir(null), "${solverParams.hashString()}.json")
-                var solution: Solution? = null
-                try {
-                    solution = readSolution(solutionJsonPath)
-                    if (!solution.isValid()) {
-                        solution = null
-                    }
-                } catch (e: Exception) {
-                    Log.d(TAG,"readSolution: could not read cached solution in solutionJsonPath: $e: Running astap")
-                }
-
-                if (solution == null) {
-                    if (!imagePath.exists()) {
-                        copyUriTo(uri, imagePath)
-                        dispatchMessage(EVENT_MESSAGE, "copied file")
-                    } else {
-                        dispatchMessage(EVENT_MESSAGE, "file already exists; skipping copying")
-                    }
-
-                    val wcsPath = replaceExt(imagePath, ".wcs")
-                    wcsPath.delete() // delete an old result file if any
-                    runAstap(imagePath, fovDeg)
-                    if (!wcsPath.exists()) {
-                        Log.e(TAG, "runastap: file $wcsPath does not exist")
-                        return@Runnable
-                    }
-                    FileInputStream(wcsPath).use { wcsStream ->
-                        val wcs = Wcs(wcsStream)
-
-                        // Reference pixel coordinate.
-                        // Typically the middle of the image
-                        val refPixel =
-                            PixelCoordinate(wcs.getDouble(Wcs.CRPIX1), wcs.getDouble(Wcs.CRPIX2))
-                        // The corresponding astrometric coordinate
-                        val refWcs =
-                            WcsCoordinate(wcs.getDouble(Wcs.CRVAL1), wcs.getDouble(Wcs.CRVAL2))
-                        val dim =
-                            Wcs.ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
-                        val pixelToWcsMatrix = Matrix22(
-                            wcs.getDouble(Wcs.CD1_1), wcs.getDouble(Wcs.CD1_2),
-                            wcs.getDouble(Wcs.CD2_1), wcs.getDouble(Wcs.CD2_2)
-                        )
-                        val wcsToPixelMatrix = pixelToWcsMatrix.invert()
-
-                        var minRa = Double.MAX_VALUE
-                        var maxRa = -Double.MAX_VALUE
-                        var minDec = Double.MAX_VALUE
-                        var maxDec = -Double.MAX_VALUE
-
-                        val updateRange = fun(px: PixelCoordinate) {
-                            val wcs = convertPixelToWcs(px, dim, refPixel, refWcs, pixelToWcsMatrix)
-                            if (minRa > wcs.ra) minRa = wcs.ra
-                            if (maxRa < wcs.ra) maxRa = wcs.ra
-                            if (minDec > wcs.dec) minDec = wcs.dec
-                            if (maxDec < wcs.dec) maxDec = wcs.dec
-                        }
-                        updateRange(PixelCoordinate(0.0, 0.0))
-                        updateRange(PixelCoordinate(0.0, dim.height.toDouble()))
-                        updateRange(PixelCoordinate(dim.width.toDouble(), 0.0))
-                        updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
-
-                        val allMatchedStars =
-                            getDeepSkyObjects().findInRange(minRa, minDec, maxRa, maxDec)
-                        val validMatchedStars = ArrayList<DeepSkyEntry>()
-                        // Since the image rectangle may not be aligned with the wcs coordinate system,
-                        // findInRange will report stars outside the image rectangle. Remove them.
-                        for (m in allMatchedStars) {
-                            val px =
-                                convertWcsToPixel(m.wcs, dim, refPixel, refWcs, wcsToPixelMatrix)
-                            if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
-                            validMatchedStars.add(m)
-                        }
-
-                        solution = Solution(
-                            params = solverParams,
-                            refPixel = refPixel,
-                            refWcs = refWcs,
-                            imageDimension = dim,
-                            pixelToWcsMatrix = pixelToWcsMatrix,
-                            matchedStars = validMatchedStars
-                        )
-                        val js = Gson().toJson(solution)
-                        Log.d(TAG, "runastap: write result to $solutionJsonPath")
-                        writeFileAtomic(solutionJsonPath, js)
-                    }
-                }
-                if (solution == null) {
-                    throw Error("could not build solution")
-                }
-                dispatchMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath)
-            } finally {
-                dispatchMessage(EVENT_OK, "all done")
-            }
-        }).start()
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -402,15 +193,5 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val drawer = findViewById<View>(R.id.layout_drawer) as DrawerLayout
         drawer.closeDrawer(GravityCompat.START)
         return true
-    }
-
-    fun startSolutionFragment(solutionJsonPath: String) {
-        val bundle = Bundle()
-        bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, solutionJsonPath)
-        val fragment = ResultFragment()
-        fragment.arguments = bundle
-        val ft = supportFragmentManager.beginTransaction()
-        ft.replace(R.id.content_frame, fragment)
-        ft.commit()
     }
 }

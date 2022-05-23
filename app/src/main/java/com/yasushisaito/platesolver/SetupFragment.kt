@@ -1,11 +1,16 @@
 package com.yasushisaito.platesolver
 
 import android.app.Activity
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.Message
 import android.provider.OpenableColumns
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.View.OnFocusChangeListener
@@ -18,6 +23,10 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import com.google.gson.Gson
+import java.io.File
+import java.io.FileInputStream
+import java.io.InputStream
 
 // Convert the lens focal length (FX) to
 // the field of view of the image
@@ -37,8 +46,15 @@ private fun isValidFovDeg(fovDeg: Double): Boolean {
 
 class SetupFragment : Fragment() {
     companion object {
+        const val TAG = "SetupFragment"
         const val DEFAULT_FOV_DEG = 2.0
         const val BUNDLE_KEY_FOV_DEG = "fovDeg"
+
+        const val EVENT_MESSAGE = 0
+        const val EVENT_OK = 1
+        const val EVENT_ERROR = 2
+        const val EVENT_SHOW_SOLUTION = 3
+        const val EVENT_DEEPSKYCSV_LOADED = 4
     }
 
     private var fovDeg: Double = DEFAULT_FOV_DEG
@@ -69,6 +85,7 @@ class SetupFragment : Fragment() {
         if (savedInstanceState != null) {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
+        DeepSkyCsv.registerOnSingletonLoaded { dispatchMessage(EVENT_DEEPSKYCSV_LOADED, "") }
         return inflater.inflate(R.layout.fragment_setup, container, false)
     }
 
@@ -121,36 +138,10 @@ class SetupFragment : Fragment() {
             pickFileLauncher.launch(intent)
         })
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setOnClickListener(View.onickListener { view ->
+        runButton.setOnClickListener(View.OnClickListener { view ->
             onRunAstap()
         })
         updateView()
-    }
-
-    private fun getFilenameFromUri(uri: Uri): String {
-        // https://stackoverflow.com/questions/5568874/how-to-extract-the-file-name-from-uri-returned-from-intent-action-get-content
-        var filename: String = ""
-        if (uri.getScheme().equals("content")) {
-            val contentResolver = requireContext().contentResolver
-            val cursor = contentResolver.query(uri, null, null, null, null)
-            try {
-                if (cursor != null && cursor.moveToFirst()) {
-                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    assert(index >= 0)
-                    filename = cursor.getString(index)
-                }
-            } finally {
-                cursor?.close();
-            }
-        }
-        if (filename.isEmpty()) {
-            val path = uri.getPath();
-            if (path != null) {
-                val cut = path.lastIndexOf('/') ?: -1;
-                if (cut != -1) filename = path.substring(cut + 1);
-            }
-        }
-        return filename
     }
 
     private fun updateView() {
@@ -163,14 +154,42 @@ class SetupFragment : Fragment() {
 
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)
         if (imageUri != null) {
-            imageNameText.setText(getFilenameFromUri(imageUri!!))
+            imageNameText.setText(getUriFilename(    requireContext().contentResolver, imageUri!!))
         } else {
             imageNameText.setText("")
         }
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null)
+        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && DeepSkyCsv.getSingleton() != null)
     }
 
+    val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
+        println("EVENTHANDLER: what=${msg.what} msg=${msg.obj}")
+        when (msg.what) {
+            EVENT_MESSAGE -> {
+
+            }
+            EVENT_OK -> {
+
+            }
+            EVENT_ERROR -> {
+
+            }
+            EVENT_SHOW_SOLUTION -> startSolutionFragment(msg.obj as String)
+            EVENT_DEEPSKYCSV_LOADED -> {
+                Log.d(TAG, "deepskycsv loaded")
+                updateView()
+            }
+            else -> throw Error("Invalid message $msg")
+        }
+        println("HANDLER $msg")
+        true
+    }
+
+    private fun dispatchMessage(what: Int, message: String) {
+        eventHandler.dispatchMessage(
+            Message.obtain(eventHandler, what, message)
+        )
+    }
     private fun onRunAstap() {
         if (!isValidFovDeg(fovDeg) || imageUri == null) {
             throw Error("invalid args")
@@ -179,20 +198,21 @@ class SetupFragment : Fragment() {
             try {
                 val fovDeg: Double = 2.0
                     dispatchMessage(EVENT_MESSAGE, "copying file")
-                val resolver: ContentResolver = contentResolver
-                val ext = MimeTypeMap.getSingleton().getExtensionFromMimeType(resolver.getType(uri))
-                val inputStream = resolver.openInputStream(uri)
+                val activity = requireActivity()
+                val resolver = activity.contentResolver
+                val ext = getUriMimeType(resolver, imageUri!!)
+                val inputStream = resolver.openInputStream(imageUri!!)
                 if (inputStream == null) {
-                    showErrorDialog("cannot open $uri")
+                    dispatchMessage(EVENT_ERROR, "could not open $imageUri")
                     return@Runnable
                 }
                 val sha256 = inputStream.use {
                     inputStreamDigest(inputStream)
                 }
-                val imagePath = File(this.getExternalFilesDir(null), "${sha256}.$ext")
+                val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
                 val solverParams = SolverParameters(imagePath.absolutePath, fovDeg)
                 val solutionJsonPath =
-                    File(this.getExternalFilesDir(null), "${solverParams.hashString()}.json")
+                    File(activity.getExternalFilesDir(null), "${solverParams.hashString()}.json")
                 var solution: Solution? = null
                 try {
                     solution = readSolution(solutionJsonPath)
@@ -205,7 +225,7 @@ class SetupFragment : Fragment() {
 
                 if (solution == null) {
                     if (!imagePath.exists()) {
-                        copyUriTo(uri, imagePath)
+                        copyUriTo(activity.contentResolver, imageUri!!, imagePath)
                         dispatchMessage(EVENT_MESSAGE, "copied file")
                     } else {
                         dispatchMessage(EVENT_MESSAGE, "file already exists; skipping copying")
@@ -254,7 +274,7 @@ class SetupFragment : Fragment() {
                         updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
 
                         val allMatchedStars =
-                            getDeepSkyObjects().findInRange(minRa, minDec, maxRa, maxDec)
+                            DeepSkyCsv.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
                         val validMatchedStars = ArrayList<DeepSkyEntry>()
                         // Since the image rectangle may not be aligned with the wcs coordinate system,
                         // findInRange will report stars outside the image rectangle. Remove them.
@@ -286,5 +306,42 @@ class SetupFragment : Fragment() {
                 dispatchMessage(EVENT_OK, "all done")
             }
         }).start()
+    }
+
+    private fun runAstap(imagePath: File, fovDeg: Double) {
+        val cmdline = arrayOf(
+            getAstapCliPath(requireContext()).path,
+            "-f", imagePath.path,
+            "-d", getStarDbDir(requireContext()).path,
+            "-fov", fovDeg.toString(),
+        )
+        Log.d(TAG, "runastap: cmdline=${cmdline.contentToString()}")
+        val proc: Process = Runtime.getRuntime().exec(cmdline, null, imagePath.parentFile)
+        val readOutputs = fun(stream: InputStream) {
+            Thread {
+                val buf = ByteArray(8192)
+                while (true) {
+                    val len = stream.read(buf)
+                    if (len < 0) break
+                    System.out.write(buf, 0, len)
+                }
+            }.start()
+        }
+        readOutputs(proc.inputStream)
+        readOutputs(proc.errorStream)
+        val exitCode = proc.waitFor()
+        if (exitCode != 0) {
+            Log.d(TAG, "runastap: exitcode=$exitCode")
+            return
+        }
+    }
+    fun startSolutionFragment(solutionJsonPath: String) {
+        val bundle = Bundle()
+        bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, solutionJsonPath)
+        val fragment = ResultFragment()
+        fragment.arguments = bundle
+        val ft = parentFragmentManager.beginTransaction()
+        ft.replace(R.id.content_frame, fragment)
+        ft.commit()
     }
 }

@@ -1,8 +1,12 @@
 package com.yasushisaito.platesolver
 
+import android.content.res.AssetManager
+import android.content.res.loader.AssetsProvider
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 // names are all in lowercase.
 data class DeepSkyEntry(val wcs: WcsCoordinate, val names: List<String>) {
@@ -12,9 +16,46 @@ data class DeepSkyEntry(val wcs: WcsCoordinate, val names: List<String>) {
     }
 }
 
+
 // Parser for deep_sky.csv file. The format is described in the first two lines
 // the file
 class DeepSkyCsv(stream: InputStream) {
+    companion object {
+        private val singletonMu = ReentrantLock()
+        private var singleton: DeepSkyCsv? = null
+        private val callbacks = ArrayList<()->Unit>()
+
+        fun registerOnSingletonLoaded(cb: ()-> Unit) {
+            singletonMu.withLock {
+                if (singleton != null) {
+                    Thread({cb()}).start()
+                    return@withLock
+                }
+                callbacks.add(cb)
+            }
+        }
+        fun getSingleton(): DeepSkyCsv? {
+            singletonMu.withLock {
+                return singleton
+            }
+        }
+
+        fun startLoadSingleton(assets: AssetManager) {
+            Thread({
+                singletonMu.withLock {
+                    if (singleton == null) {
+                        assets.open("deep_sky.csv").use { inputStream ->
+                            singleton = DeepSkyCsv(inputStream)
+                        }
+                        for (cb in callbacks) {
+                            cb()
+                        }
+                        callbacks.clear()
+                    }
+                }
+            }).start()
+        }
+    }
     private val entries = ArrayList<DeepSkyEntry>()
 
     init {
