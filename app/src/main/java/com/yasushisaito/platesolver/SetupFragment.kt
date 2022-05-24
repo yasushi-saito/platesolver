@@ -1,15 +1,12 @@
 package com.yasushisaito.platesolver
 
 import android.app.Activity
-import android.content.ContentResolver
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.provider.OpenableColumns
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -18,15 +15,14 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import com.google.gson.Gson
 import java.io.File
-import java.io.FileInputStream
 import java.io.InputStream
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 // Convert the lens focal length (FX) to
 // the field of view of the image
@@ -51,13 +47,14 @@ class SetupFragment : Fragment() {
         const val BUNDLE_KEY_FOV_DEG = "fovDeg"
 
         const val EVENT_MESSAGE = 0
-        const val EVENT_OK = 1
         const val EVENT_ERROR = 2
         const val EVENT_SHOW_SOLUTION = 3
-        const val EVENT_DEEPSKYCSV_LOADED = 4
+        const val EVENT_SHOW_DIALOG = 4
+        const val EVENT_DISMISS_DIALOG = 5
+        const val EVENT_DEEPSKYCSV_LOADED = 6
     }
 
-    private var fovDeg: Double = DEFAULT_FOV_DEG
+    private  var fovDeg: Double = DEFAULT_FOV_DEG
     private var imageUri: Uri? = null
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
@@ -85,7 +82,7 @@ class SetupFragment : Fragment() {
         if (savedInstanceState != null) {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
-        DeepSkyCsv.registerOnSingletonLoaded { dispatchMessage(EVENT_DEEPSKYCSV_LOADED, "") }
+        DeepSkyCsv.registerOnSingletonLoaded { sendMessage(EVENT_DEEPSKYCSV_LOADED, "" as Object) }
         return inflater.inflate(R.layout.fragment_setup, container, false)
     }
 
@@ -162,31 +159,45 @@ class SetupFragment : Fragment() {
         runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && DeepSkyCsv.getSingleton() != null)
     }
 
+    var dialog: AstapDialogFragment? = null
+
     val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
         println("EVENTHANDLER: what=${msg.what} msg=${msg.obj}")
+
+        println("HANDLER $msg dialog=$dialog")
         when (msg.what) {
             EVENT_MESSAGE -> {
-
-            }
-            EVENT_OK -> {
-
+                dialog?.let {
+                    it.setMessage(msg.obj as String)
+                }
             }
             EVENT_ERROR -> {
-
+                dialog?.let {
+                    it.setError(msg.obj as String)
+                }
             }
-            EVENT_SHOW_SOLUTION -> startSolutionFragment(msg.obj as String)
+            EVENT_SHOW_SOLUTION -> {
+                dialog = null
+                startSolutionFragment(msg.obj as String)
+            }
             EVENT_DEEPSKYCSV_LOADED -> {
                 Log.d(TAG, "deepskycsv loaded")
                 updateView()
             }
+            EVENT_SHOW_DIALOG -> {
+                dialog?.let { dialog ->                dialog.show(childFragmentManager, null) }
+            }
+            EVENT_DISMISS_DIALOG -> {
+                dialog?.let { dialog -> dialog.dismiss() }
+                dialog = null
+            }
             else -> throw Error("Invalid message $msg")
         }
-        println("HANDLER $msg")
         true
     }
 
-    private fun dispatchMessage(what: Int, message: String) {
-        eventHandler.dispatchMessage(
+    private fun sendMessage(what: Int, message: Object) {
+        eventHandler.sendMessage(
             Message.obtain(eventHandler, what, message)
         )
     }
@@ -194,16 +205,26 @@ class SetupFragment : Fragment() {
         if (!isValidFovDeg(fovDeg) || imageUri == null) {
             throw Error("invalid args")
         }
+
+        val activity = requireActivity()
+        var astapRunnerMu = ReentrantLock()
+        var astapRunner: AstapRunner? = null
+        dialog = AstapDialogFragment(
+            onAbort= {
+                astapRunnerMu.withLock {
+                    astapRunner?.let { it.abort() }
+                }
+            },
+            fovDeg = fovDeg,
+            imageName= getUriFilename(activity.contentResolver, imageUri!!))
         Thread(Runnable {
-            try {
                 val fovDeg: Double = 2.0
-                    dispatchMessage(EVENT_MESSAGE, "copying file")
                 val activity = requireActivity()
                 val resolver = activity.contentResolver
                 val ext = getUriMimeType(resolver, imageUri!!)
                 val inputStream = resolver.openInputStream(imageUri!!)
                 if (inputStream == null) {
-                    dispatchMessage(EVENT_ERROR, "could not open $imageUri")
+                    Log.e(TAG, "could not open $imageUri")
                     return@Runnable
                 }
                 val sha256 = inputStream.use {
@@ -224,87 +245,40 @@ class SetupFragment : Fragment() {
                 }
 
                 if (solution == null) {
+                    astapRunnerMu.withLock {
+                        astapRunner = AstapRunner(
+                            context = requireContext(),
+                            onError = { message: String ->
+                                sendMessage(
+                                    EVENT_ERROR,
+                                    message as Object
+                                )
+                            },
+                            onMessage = { message: String ->
+                                sendMessage(
+                                    EVENT_MESSAGE,
+                                    message as Object
+                                )
+                            },
+                            solutionJsonPath = solutionJsonPath,
+                            solverParams = solverParams,
+                            imageName = getUriFilename(requireContext().contentResolver, imageUri!!)
+                        )
+                    }
+                    sendMessage(EVENT_SHOW_DIALOG, "" as Object)
                     if (!imagePath.exists()) {
                         copyUriTo(activity.contentResolver, imageUri!!, imagePath)
-                        dispatchMessage(EVENT_MESSAGE, "copied file")
+                        sendMessage(EVENT_MESSAGE, "copied file" as Object)
                     } else {
-                        dispatchMessage(EVENT_MESSAGE, "file already exists; skipping copying")
+                        sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Object)
                     }
-
-                    val wcsPath = replaceExt(imagePath, ".wcs")
-                    wcsPath.delete() // delete an old result file if any
-                    runAstap(imagePath, fovDeg)
-                    if (!wcsPath.exists()) {
-                        Log.e(TAG, "runastap: file $wcsPath does not exist")
-                        return@Runnable
-                    }
-                    FileInputStream(wcsPath).use { wcsStream ->
-                        val wcs = Wcs(wcsStream)
-
-                        // Reference pixel coordinate.
-                        // Typically the middle of the image
-                        val refPixel =
-                            PixelCoordinate(wcs.getDouble(Wcs.CRPIX1), wcs.getDouble(Wcs.CRPIX2))
-                        // The corresponding astrometric coordinate
-                        val refWcs =
-                            WcsCoordinate(wcs.getDouble(Wcs.CRVAL1), wcs.getDouble(Wcs.CRVAL2))
-                        val dim =
-                            Wcs.ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
-                        val pixelToWcsMatrix = Matrix22(
-                            wcs.getDouble(Wcs.CD1_1), wcs.getDouble(Wcs.CD1_2),
-                            wcs.getDouble(Wcs.CD2_1), wcs.getDouble(Wcs.CD2_2)
-                        )
-                        val wcsToPixelMatrix = pixelToWcsMatrix.invert()
-
-                        var minRa = Double.MAX_VALUE
-                        var maxRa = -Double.MAX_VALUE
-                        var minDec = Double.MAX_VALUE
-                        var maxDec = -Double.MAX_VALUE
-
-                        val updateRange = fun(px: PixelCoordinate) {
-                            val wcs = convertPixelToWcs(px, dim, refPixel, refWcs, pixelToWcsMatrix)
-                            if (minRa > wcs.ra) minRa = wcs.ra
-                            if (maxRa < wcs.ra) maxRa = wcs.ra
-                            if (minDec > wcs.dec) minDec = wcs.dec
-                            if (maxDec < wcs.dec) maxDec = wcs.dec
-                        }
-                        updateRange(PixelCoordinate(0.0, 0.0))
-                        updateRange(PixelCoordinate(0.0, dim.height.toDouble()))
-                        updateRange(PixelCoordinate(dim.width.toDouble(), 0.0))
-                        updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
-
-                        val allMatchedStars =
-                            DeepSkyCsv.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
-                        val validMatchedStars = ArrayList<DeepSkyEntry>()
-                        // Since the image rectangle may not be aligned with the wcs coordinate system,
-                        // findInRange will report stars outside the image rectangle. Remove them.
-                        for (m in allMatchedStars) {
-                            val px =
-                                convertWcsToPixel(m.wcs, dim, refPixel, refWcs, wcsToPixelMatrix)
-                            if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
-                            validMatchedStars.add(m)
-                        }
-
-                        solution = Solution(
-                            params = solverParams,
-                            refPixel = refPixel,
-                            refWcs = refWcs,
-                            imageDimension = dim,
-                            pixelToWcsMatrix = pixelToWcsMatrix,
-                            matchedStars = validMatchedStars
-                        )
-                        val js = Gson().toJson(solution)
-                        Log.d(TAG, "runastap: write result to $solutionJsonPath")
-                        writeFileAtomic(solutionJsonPath, js)
-                    }
+                    astapRunner!!.run()
+                    sendMessage(EVENT_DISMISS_DIALOG, "" as Object)
                 }
-                if (solution == null) {
+                if (!solutionJsonPath.exists()) {
                     throw Error("could not build solution")
                 }
-                dispatchMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath)
-            } finally {
-                dispatchMessage(EVENT_OK, "all done")
-            }
+                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Object)
         }).start()
     }
 

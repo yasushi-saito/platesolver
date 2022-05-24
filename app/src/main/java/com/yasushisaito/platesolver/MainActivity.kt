@@ -31,25 +31,6 @@ import kotlin.concurrent.withLock
 import java.io.DataOutputStream as DataOutputStream1
 
 
-// Remove the extension from the given path.
-// If the path's filename is missing '.',
-// it returns the path itself.
-//
-// Example:
-//   removeExt(File(x, "bar.jpg") -> File(x, "bar")
-fun removeExt(path: File): File {
-    val name = path.name
-    val i = name.lastIndexOf('.')
-    if (i < 0) return path
-    val basename = name.substring(0, i)
-    return File(path.parent, basename)
-}
-
-fun replaceExt(path: File, ext: String): File {
-    val basename = removeExt(path)
-    return File(basename.parentFile, basename.name + ext)
-}
-
 // Writes the given contents to the file. It guarantees that
 // either the file is created with the full contents, or the file does
 // not exist.

@@ -34,7 +34,7 @@ class ResultFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val setText = fun(viewId: Int, value: String) {
-            var text = view.findViewById(viewId) as TextView
+            var text = view.findViewById<TextView>(viewId)
             text.setText(value)
         }
 
@@ -43,6 +43,7 @@ class ResultFragment : Fragment() {
             setText(viewId, "ra:%.3f dec:%.3f".format(wcsCoord.ra, wcsCoord.dec))
         }
 
+
         setText(
             R.id.text_result_imagedimension,
             "%d*%d".format(solution.imageDimension.width, solution.imageDimension.height)
@@ -50,7 +51,8 @@ class ResultFragment : Fragment() {
         val imagePath = File(solution.params.imagePath)
         val modTime = Instant.ofEpochMilli(imagePath.lastModified())
         setText(R.id.text_result_imagelastupdate, modTime.toString())
-
+        setText(R.id.text_result_imagename, solution.imageName)
+        setText(R.id.text_result_fov_deg, "%.02f".format(solution.params.fovDeg))
         setCoord(0.0, 0.0, R.id.text_corner00)
         setCoord(0.0, solution.imageDimension.height.toDouble(), R.id.text_corner01)
         setCoord(solution.imageDimension.width.toDouble(), 0.0, R.id.text_corner10)

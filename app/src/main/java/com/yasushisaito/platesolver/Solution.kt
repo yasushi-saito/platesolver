@@ -33,6 +33,7 @@ fun convertWcsToPixel(wcs: WcsCoordinate,
 
 data class Solution(
     val params: SolverParameters,
+    val imageName: String, // The user-defined filename of the image
     val imageDimension: Wcs.ImageDimension,
     val refPixel: PixelCoordinate,
     val refWcs: WcsCoordinate,
