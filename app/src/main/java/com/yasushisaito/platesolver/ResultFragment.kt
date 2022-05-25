@@ -16,7 +16,7 @@ class ResultFragment : Fragment() {
         const val BUNDLE_KEY_SOLUTION_JSON_PATH = "solutionJsonPath"
     }
 
-    lateinit var solution: Solution
+    private lateinit var solution: Solution
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,6 +33,8 @@ class ResultFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val annotatedImageView = view.findViewById<AnnotatedImageView>(R.id.view_annotatedimage)
+        annotatedImageView.setSolution(solution)
         val setText = fun(viewId: Int, value: String) {
             var text = view.findViewById<TextView>(viewId)
             text.setText(value)
@@ -42,8 +44,6 @@ class ResultFragment : Fragment() {
             val wcsCoord = solution.pixelToWcs(PixelCoordinate(px, py))
             setText(viewId, "ra:%.3f dec:%.3f".format(wcsCoord.ra, wcsCoord.dec))
         }
-
-
         setText(
             R.id.text_result_imagedimension,
             "%d*%d".format(solution.imageDimension.width, solution.imageDimension.height)

@@ -4,9 +4,7 @@ package com.yasushisaito.platesolver
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -14,15 +12,16 @@ import android.view.MotionEvent.*
 import android.view.ScaleGestureDetector
 import android.view.View
 
+private data class CanvasCoordinate(val x: Double, val y: Double)
+
 class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private val paint = Paint() // Paint object for coloring shapes
-    private val radius = 100f // Radius of circles to be drawn
 
     private var initX = 0f // See onTouchEvent
     private var initY = 0f // See onTouchEvent
 
-    private var canvasX = 0f // x-coord of canvas center
-    private var canvasY = 0f // y-coord of canvas center
+    private var canvasX = 0f // x-coord of canvas (0,0)
+    private var canvasY = 0f // y-coord of canvas (0,0)
     private var dispWidth = 0f // (Supposed to be) width of entire canvas
     private var dispHeight = 0f // (Supposed to be) height of entire canvas
 
@@ -39,23 +38,59 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         private const val MAX_ZOOM = 10f
     }
 
+    private lateinit var solution: Solution
+    private lateinit var imageBitmap: Bitmap
+    private lateinit var imageBitmapRect: Rect
+
+    fun setSolution(s: Solution) {
+        solution = s
+        imageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
+        imageBitmapRect = Rect(0, 0, imageBitmap.width, imageBitmap.height)
+    }
+
+    private fun pixelCoordToCanvasCoord(p: PixelCoordinate): CanvasCoordinate {
+        return CanvasCoordinate(
+            p.x / solution.imageDimension.width * width,
+            p.y / solution.imageDimension.height * height)
+    }
+
+
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
         canvas.save() // save() and restore() are used to reset canvas data after each draw
+
         // Set the canvas origin to the center of the screen only on the first time onDraw is called
         //  (otherwise it'll break the panning code)
         if (firstDraw) {
-            canvasX = width/2f
-            canvasY = height/2f
+            canvasX = 0f
+            canvasY = 0f
             firstDraw = false
         }
         canvas.scale(scaleFactor, scaleFactor) // Scale the canvas according to scaleFactor
 
         // Just draw a bunch of circles (this is for testing panning and zooming
         paint.style = Paint.Style.FILL
-        paint.color = Color.parseColor("#000000")
+        paint.color = Color.parseColor("#00e0e0")
         canvas.translate(canvasX, canvasY)
+
+        canvas.drawBitmap(
+            imageBitmap,
+            imageBitmapRect,
+            RectF(0f, 0f, width.toFloat(), height.toFloat()),
+            paint
+        )
+
+        for (e in solution.matchedStars) {
+            val px = solution.wcsToPixel(e.wcs)
+            val c = pixelCoordToCanvasCoord(px)
+            if (e.names.contains("m42") or e.names.contains("m43")) {
+                Log.d(TAG, "CENTER: px=$px canas=$c")
+                canvas.drawCircle(c.x.toFloat(), c.y.toFloat(), 10f, paint)
+            }
+        }
+        Log.d(TAG, "CENTER: ($canvasX, $canvasY) width: (${width}, ${height})")
+        /*
         canvas.drawCircle(0f,0f,radius,paint)
         for (i in 2..40 step 2) {
             canvas.drawCircle(radius*i,0f,radius,paint)
@@ -66,12 +101,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             canvas.drawCircle(radius*i,-radius*i,radius,paint)
             canvas.drawCircle(-radius*i,radius*i,radius,paint)
             canvas.drawCircle(-radius*i,-radius*i,radius,paint)
-        }
-
+        }*/
         canvas.restore()
-
-        dispWidth = canvas.width.toFloat()
-        dispHeight = canvas.height.toFloat()
     }
 
     // performClick isn't being overridden (should be for accessibility purposes), but it doesn't
@@ -131,8 +162,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
         detector.onTouchEvent(event) // Listen for scale gestures (i.e. pinching or double tap+drag
         // Just some useful coordinate data
-        Log.d(TAG, "x: $x, y: $y,\ninitY: $initX, initY,\n" +
-                "canvasX: $canvasX, canvasY: $canvasY,\nwidth: $dispWidth, height: $dispHeight\n" +
+        Log.d(TAG, "x: $x, y: $y,\ninit: ($initX, $initY) " +
+                "canvas: ($canvasX, $canvasY),\nwidth: $dispWidth, height: $dispHeight\n" +
                 "focusX: ${detector.focusX}, focusY: ${detector.focusY}")
         // Data pertaining to fingers for responsiveness and stuff
         Log.d(TAG, "Action: ${event.action and MotionEvent.ACTION_MASK}\n")
