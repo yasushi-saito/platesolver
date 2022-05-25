@@ -3,13 +3,10 @@ package com.yasushisaito.platesolver
 import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
-import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
-import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
 
 
@@ -48,6 +45,10 @@ class AstapRunner(
     companion object {
         const val TAG = "AstapRunner"
     }
+
+    // Starts the astap process. It blocks until the
+    // process finishes. If astap finishes successfully,
+    // it will create a file at solutionJsonPath.
     fun run() {
         val imagePath = File(solverParams.imagePath)
         val wcsPath = replaceExt(imagePath, ".wcs")
@@ -124,8 +125,9 @@ class AstapRunner(
     private var proc: Process? = null
     private var aborted = false
 
-    // Aborts the astap process.
-    // If the process is not running now, it is a noop.
+    // Aborts the astap process. If the process hasn't started yet,
+    // it tells run() not to start the process.
+    // If the process has terminated already, this function is a noop.
     fun abort() {
         procMu.withLock {
             aborted = true
