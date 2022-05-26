@@ -61,6 +61,5 @@ class ResultFragment : Fragment() {
             solution.imageDimension.height.toDouble(),
             R.id.text_corner11
         )
-        setCoord(solution.refPixel.x, solution.refPixel.y, R.id.text_center)
     }
 }

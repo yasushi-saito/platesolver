@@ -34,7 +34,7 @@ class WcsTest {
                 refWcs=refWcs,
                 imageDimension = dim,
                 pixelToWcsMatrix = pixelToWcsMatrix,
-                matchedStars = ArrayList<DeepSkyEntry>())
+                matchedStars = ArrayList<WellKnownDso>())
 
             assertEquals(8.0, wcs.getDouble("BITPIX"), 1e-6)
             assertEquals(6025, dim.width)

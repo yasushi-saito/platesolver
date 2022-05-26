@@ -1,6 +1,7 @@
 #!/bin/bash
 set -ex
-adb push /home/saito/Downloads/m42.jpg /sdcard/Download/
+adb push /home/saito/astrometry-images/*.jpg /sdcard/Download/
+adb push /home/saito/astrometry-images/*.png /sdcard/Download/
 
 if [ ! -f /tmp/h17.zip ]; then
     (cd /opt/astap; zip -r /tmp/h17.zip h17*)

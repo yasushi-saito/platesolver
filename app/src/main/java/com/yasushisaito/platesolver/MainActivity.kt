@@ -2,17 +2,12 @@ package com.yasushisaito.platesolver
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.ContentResolver
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.Message
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
-import android.webkit.MimeTypeMap
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,12 +18,8 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
-import com.google.gson.Gson
 import java.io.*
 import java.security.MessageDigest
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
-import java.io.DataOutputStream as DataOutputStream1
 
 
 // Writes the given contents to the file. It guarantees that
@@ -87,7 +78,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         ft.add(R.id.content_frame, fragment)
         ft.commit()
 
-        DeepSkyCsv.startLoadSingleton(assets)
+        WellKnownDsoReader.startLoadSingleton(assets)
 
         Thread(Runnable {
             val astapCliPath = getAstapCliPath(this)

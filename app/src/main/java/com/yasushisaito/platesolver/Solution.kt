@@ -2,7 +2,6 @@ package com.yasushisaito.platesolver
 
 import com.google.gson.Gson
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileReader
 
 // Convert pixel coordinate to WCS.
@@ -32,17 +31,22 @@ fun convertWcsToPixel(wcs: WcsCoordinate,
 }
 
 data class Solution(
+    val version: String,
     val params: SolverParameters,
     val imageName: String, // The user-defined filename of the image
     val imageDimension: Wcs.ImageDimension,
     val refPixel: PixelCoordinate,
     val refWcs: WcsCoordinate,
     val pixelToWcsMatrix: Matrix22,
-    val matchedStars: ArrayList<DeepSkyEntry>,
+    val matchedStars: ArrayList<WellKnownDso>,
 ) {
+    companion object {
+        const val CURRENT_VERSION = "20220526"
+    }
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 
     fun isValid(): Boolean {
+        if (version != CURRENT_VERSION) return false
         if (params == null) return false
         return true
     }

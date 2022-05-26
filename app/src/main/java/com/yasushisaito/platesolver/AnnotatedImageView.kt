@@ -80,16 +80,16 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         )
 
         paint.color = Color.parseColor("#00e0e0")
-        paint.setTextSize(24f)
+        paint.setTextSize(32f / scaleFactor)
         for (e in solution.matchedStars) {
             val px = solution.wcsToPixel(e.wcs)
             val c = pixelCoordToCanvasCoord(px)
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 3f
-                canvas.drawCircle(c.x.toFloat(), c.y.toFloat(), 10f, paint)
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 4f / scaleFactor
+            canvas.drawCircle(c.x.toFloat(), c.y.toFloat(), 16f / scaleFactor, paint)
 
-                paint.style = Paint.Style.FILL
-                canvas.drawText(e.names[0], c.x.toFloat()+10, c.y.toFloat()-10, paint)
+            paint.style = Paint.Style.FILL
+            canvas.drawText(e.names[0], c.x.toFloat()+10/scaleFactor, c.y.toFloat()-10/scaleFactor, paint)
         }
         canvas.restore()
     }
@@ -150,13 +150,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         }
 
         detector.onTouchEvent(event) // Listen for scale gestures (i.e. pinching or double tap+drag
-        // Just some useful coordinate data
-        Log.d(TAG, "x: $x, y: $y,\ninit: ($initX, $initY) " +
-                "canvas: ($canvasX, $canvasY),\nwidth: $dispWidth, height: $dispHeight\n" +
-                "focusX: ${detector.focusX}, focusY: ${detector.focusY}")
-        // Data pertaining to fingers for responsiveness and stuff
-        Log.d(TAG, "Action: ${event.action and MotionEvent.ACTION_MASK}\n")
-
         return true
     }
 

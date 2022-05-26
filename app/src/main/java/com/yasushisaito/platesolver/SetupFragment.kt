@@ -82,7 +82,7 @@ class SetupFragment : Fragment() {
         if (savedInstanceState != null) {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
-        DeepSkyCsv.registerOnSingletonLoaded { sendMessage(EVENT_DEEPSKYCSV_LOADED, "" as Object) }
+        WellKnownDsoReader.registerOnSingletonLoaded { sendMessage(EVENT_DEEPSKYCSV_LOADED, "" as Object) }
         return inflater.inflate(R.layout.fragment_setup, container, false)
     }
 
@@ -156,7 +156,7 @@ class SetupFragment : Fragment() {
             imageNameText.setText("")
         }
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && DeepSkyCsv.getSingleton() != null)
+        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoReader.getSingleton() != null)
     }
 
     var dialog: AstapDialogFragment? = null
@@ -218,7 +218,6 @@ class SetupFragment : Fragment() {
             fovDeg = fovDeg,
             imageName= getUriFilename(activity.contentResolver, imageUri!!))
         Thread(Runnable {
-                val fovDeg: Double = 2.0
                 val activity = requireActivity()
                 val resolver = activity.contentResolver
                 val ext = getUriMimeType(resolver, imageUri!!)

@@ -4,7 +4,7 @@ import org.junit.Test
 
 import org.junit.Assert.*
 
-class DeepSkyCsvTest {
+class WellKnownDsoTest {
     @Test
     fun read() {
         val data = """ASTAP/CCDCIEL DEEPSKY DATABASE (extract from HNSKY level 3 database), 30000 objects. Based on SAC81, Wolfgang Steinicke's REV NGC&IC, Leda, Sh2,vdB,HCG,LND,PK.DWB. GX>=1_arcmin. IAU named stars included. GC of M31, M33 added. Version 2021-06-15.
@@ -22,7 +22,7 @@ RA[0..864000], DEC[-324000..324000], name(s), length [0.1 min], width[0.1 min], 
         """
         val stream = data.byteInputStream()
         stream.use {
-            val ds = DeepSkyCsv(stream)
+            val ds = WellKnownDsoReader(stream)
             var v0 = ds.findByName("NP_2020")
             assertNotNull(v0)
             assertEquals(863691.0*360/864000, v0!!.wcs.ra, 1e-6)

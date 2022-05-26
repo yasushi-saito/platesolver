@@ -8,6 +8,13 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_end="16dp" />
+
     <TextView
         android:id="@+id/text_result_imagename"
         android:layout_width="wrap_content"
@@ -20,9 +27,9 @@
         android:id="@+id/label_corners"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textStyle="bold"
         android:layout_marginTop="16dp"
-        android:text="Solution"
+        android:text="Coordinates at corners"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         app:layout_constraintTop_toBottomOf="@+id/label_fov" />
 
@@ -31,8 +38,8 @@
         android:layout_width="0dp"
         android:layout_height="19dp"
         android:layout_marginTop="24dp"
-        android:textStyle="bold"
         android:text="Image"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Image" />
@@ -40,10 +47,10 @@
     <TextView
         android:id="@+id/label_imagedimension"
         android:layout_width="wrap_content"
-        android:textStyle="bold"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:text="Dimension"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1"
         app:layout_constraintTop_toBottomOf="@+id/label_image" />
 
@@ -51,9 +58,9 @@
         android:id="@+id/label_lastupdate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:textStyle="bold"
+        android:layout_marginTop="8dp"
         android:text="Last update"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1"
         app:layout_constraintTop_toBottomOf="@+id/label_imagedimension" />
 
@@ -75,7 +82,7 @@
         android:id="@+id/label_fov"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="16dp"
         android:text="Field of view (deg)"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
@@ -128,13 +135,13 @@
         android:id="@+id/text_corner01"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="0.0 / 0.0"
+        android:layout_marginTop="16dp"
         android:gravity="start|top"
+        android:text="0.0 / 0.0"
         app:layout_constraintEnd_toStartOf="@+id/guideline2"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1"
-        app:layout_constraintTop_toBottomOf="@+id/text_center" />
+        app:layout_constraintTop_toBottomOf="@+id/text_corner00" />
 
     <TextView
         android:id="@+id/text_corner10"
@@ -155,24 +162,51 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/text_center"
-        android:layout_width="120dp"
+        android:id="@+id/label_corners2"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:gravity="start|top"
-        android:text="0.0 / 0.0"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"
+        android:text="Show matched objects"
+        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
-        app:layout_constraintTop_toBottomOf="@+id/text_corner00" />
+        app:layout_constraintTop_toBottomOf="@+id/text_corner01" />
+
+    <TextView
+        android:id="@+id/textView7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="More"
+        app:layout_constraintBaseline_toBaselineOf="@+id/textView6"
+        app:layout_constraintEnd_toStartOf="@+id/guideline_left" />
+
+    <SeekBar
+        android:id="@+id/seekbar_matchedstars"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        app:layout_constraintEnd_toStartOf="@+id/textView7"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/textView6"
+        app:layout_constraintTop_toBottomOf="@+id/label_corners2" />
+
+    <TextView
+        android:id="@+id/textView6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="Fewer"
+        app:layout_constraintBottom_toBottomOf="@+id/seekbar_matchedstars"
+        app:layout_constraintStart_toStartOf="@+id/guideline_left0" />
 
     <com.yasushisaito.platesolver.AnnotatedImageView
         android:id="@+id/view_annotatedimage"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/text_corner01" />
+        app:layout_constraintTop_toBottomOf="@+id/seekbar_matchedstars" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

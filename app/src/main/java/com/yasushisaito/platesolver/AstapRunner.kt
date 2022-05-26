@@ -95,8 +95,8 @@ class AstapRunner(
             updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
 
             val allMatchedStars =
-                DeepSkyCsv.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
-            val validMatchedStars = ArrayList<DeepSkyEntry>()
+                WellKnownDsoReader.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
+            val validMatchedStars = ArrayList<WellKnownDso>()
             // Since the image rectangle may not be aligned with the wcs coordinate system,
             // findInRange will report stars outside the image rectangle. Remove them.
             for (m in allMatchedStars) {
@@ -107,6 +107,7 @@ class AstapRunner(
             }
 
             val solution = Solution(
+                version = Solution.CURRENT_VERSION,
                 params = solverParams,
                 refPixel = refPixel,
                 refWcs = refWcs,
