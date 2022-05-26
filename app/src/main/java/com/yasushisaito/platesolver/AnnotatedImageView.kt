@@ -70,8 +70,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         canvas.scale(scaleFactor, scaleFactor) // Scale the canvas according to scaleFactor
 
         // Just draw a bunch of circles (this is for testing panning and zooming
-        paint.style = Paint.Style.FILL
-        paint.color = Color.parseColor("#00e0e0")
         canvas.translate(canvasX, canvasY)
 
         canvas.drawBitmap(
@@ -81,27 +79,18 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             paint
         )
 
+        paint.color = Color.parseColor("#00e0e0")
+        paint.setTextSize(24f)
         for (e in solution.matchedStars) {
             val px = solution.wcsToPixel(e.wcs)
             val c = pixelCoordToCanvasCoord(px)
-            if (e.names.contains("m42") or e.names.contains("m43")) {
-                Log.d(TAG, "CENTER: px=$px canas=$c")
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 3f
                 canvas.drawCircle(c.x.toFloat(), c.y.toFloat(), 10f, paint)
-            }
+
+                paint.style = Paint.Style.FILL
+                canvas.drawText(e.names[0], c.x.toFloat()+10, c.y.toFloat()-10, paint)
         }
-        Log.d(TAG, "CENTER: ($canvasX, $canvasY) width: (${width}, ${height})")
-        /*
-        canvas.drawCircle(0f,0f,radius,paint)
-        for (i in 2..40 step 2) {
-            canvas.drawCircle(radius*i,0f,radius,paint)
-            canvas.drawCircle(-radius*i,0f,radius,paint)
-            canvas.drawCircle(0f,radius*i,radius,paint)
-            canvas.drawCircle(0f,-radius*i,radius,paint)
-            canvas.drawCircle(radius*i,radius*i,radius,paint)
-            canvas.drawCircle(radius*i,-radius*i,radius,paint)
-            canvas.drawCircle(-radius*i,radius*i,radius,paint)
-            canvas.drawCircle(-radius*i,-radius*i,radius,paint)
-        }*/
         canvas.restore()
     }
 
