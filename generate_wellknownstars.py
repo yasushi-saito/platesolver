@@ -32,9 +32,11 @@ class DeepSkyObject:
 digits_re = re.compile('\d+')
 spaces_re = re.compile(' +')
 
-def parse_bayerflamsteed(s: str) -> str:
+def parse_bayerflamsteed(org: str) -> str:
     # Remove the numeric designation
-    s = digits_re.sub(' ', s)
+    s = digits_re.sub(' ', org).strip()
+    if ' ' not in s:
+        s = org
     s = spaces_re.sub(' ', s).strip()
     return s
 
@@ -61,12 +63,10 @@ def read_hygfull_csv() -> List[DeepSkyObject]:
             names: List[str] = []
             if name := line["ProperName"]:
                 names.append(name)
-
-            if hd := line["HD"]:
-                names.append(f"hd{hd}")
-
             if bfs := line["BayerFlamsteed"]:
                 names.append(parse_bayerflamsteed(bfs))
+            if hd := line["HD"]:
+                names.append(f"hd{hd}")
 
             if not names:
                 continue
@@ -94,13 +94,6 @@ def read_dso_csv() -> List[DeepSkyObject]:
             if not typ:
                 continue
 
-            mag_str = line["mag"]
-            if not mag_str:
-                continue
-            mag = float(mag_str)
-            if mag > MAX_MAGNITUDE:
-                continue
-
             names: List[str] = []
             if name := line["name"]:
                 names.append(name)
@@ -108,13 +101,20 @@ def read_dso_csv() -> List[DeepSkyObject]:
             if cat1 := line["cat1"]:
                 id1 = line["id1"]
                 names.append(f"{cat1}{id1}")
-
             if cat2 := line["cat2"]:
                 id2 = line["id2"]
                 names.append(f"{cat2}{id2}")
 
             if not names:
                 continue
+
+            mag_str = line["mag"]
+            if not mag_str:
+                mag = MAX_MAGNITUDE
+            else:
+                mag = float(mag_str)
+                if mag > MAX_MAGNITUDE:
+                    mag = MAX_MAGNITUDE
 
             dsos.append(
                 DeepSkyObject(

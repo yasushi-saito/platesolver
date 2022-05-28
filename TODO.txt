@@ -1,0 +1,13 @@
+Handling failed astap runs.
+
+
+On abort:
+
+   --------- beginning of crash
+2022-05-27 21:16:22.319 31966-32339/com.yasushisaito.platesolver E/AndroidRuntime: FATAL EXCEPTION: Thread-9
+    Process: com.yasushisaito.platesolver, PID: 31966
+    java.lang.Error: could not build solution
+        at com.yasushisaito.platesolver.SetupFragment.onRunAstap$lambda-12(SetupFragment.kt:278)
+        at com.yasushisaito.platesolver.SetupFragment.$r8$lambda$3IXJ-ksd7EuDe65Q8x8j5w7api4(Unknown Source:0)
+        at com.yasushisaito.platesolver.SetupFragment$$ExternalSyntheticLambda6.run(Unknown Source:6)
+        at java.lang.Thread.run(Thread.java:920)

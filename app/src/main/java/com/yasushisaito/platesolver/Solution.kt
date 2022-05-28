@@ -41,7 +41,7 @@ data class Solution(
     val matchedStars: ArrayList<WellKnownDso>,
 ) {
     companion object {
-        const val CURRENT_VERSION = "20220526"
+        const val CURRENT_VERSION = "20220527"
     }
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 

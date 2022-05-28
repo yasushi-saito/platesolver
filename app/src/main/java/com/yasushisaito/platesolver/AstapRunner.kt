@@ -143,6 +143,8 @@ class AstapRunner(
             "-f", solverParams.imagePath,
             "-d", getStarDbDir(context).path,
             "-fov", solverParams.fovDeg.toString(),
+            "-ra", "18.05",
+            "-spd", "68"
         )
         Log.d(TAG, "runastap: cmdline=${cmdline.contentToString()}")
 
