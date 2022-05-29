@@ -5,6 +5,7 @@ import android.util.Log
 import com.google.gson.Gson
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -60,20 +61,20 @@ class AstapRunner(
             return
         }
         FileInputStream(wcsPath).use { wcsStream ->
-            val wcs = Wcs(wcsStream)
+            val wcs = AstapResultReader(wcsStream)
 
             // Reference pixel coordinate.
             // Typically the middle of the image
             val refPixel =
-                PixelCoordinate(wcs.getDouble(Wcs.CRPIX1), wcs.getDouble(Wcs.CRPIX2))
+                PixelCoordinate(wcs.getDouble(AstapResultReader.CRPIX1), wcs.getDouble(AstapResultReader.CRPIX2))
             // The corresponding astrometric coordinate
-            val refWcs =
-                WcsCoordinate(wcs.getDouble(Wcs.CRVAL1), wcs.getDouble(Wcs.CRVAL2))
+            val refCel =
+                CelestialCoordinate(wcs.getDouble(AstapResultReader.CRVAL1), wcs.getDouble(AstapResultReader.CRVAL2))
             val dim =
-                Wcs.ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
+                AstapResultReader.ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
             val pixelToWcsMatrix = Matrix22(
-                wcs.getDouble(Wcs.CD1_1), wcs.getDouble(Wcs.CD1_2),
-                wcs.getDouble(Wcs.CD2_1), wcs.getDouble(Wcs.CD2_2)
+                wcs.getDouble(AstapResultReader.CD1_1), wcs.getDouble(AstapResultReader.CD1_2),
+                wcs.getDouble(AstapResultReader.CD2_1), wcs.getDouble(AstapResultReader.CD2_2)
             )
             val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 
@@ -83,7 +84,7 @@ class AstapRunner(
             var maxDec = -Double.MAX_VALUE
 
             val updateRange = fun(px: PixelCoordinate) {
-                val wcs = convertPixelToWcs(px, dim, refPixel, refWcs, pixelToWcsMatrix)
+                val wcs = convertPixelToWcs(px, dim, refPixel, refCel, pixelToWcsMatrix)
                 if (minRa > wcs.ra) minRa = wcs.ra
                 if (maxRa < wcs.ra) maxRa = wcs.ra
                 if (minDec > wcs.dec) minDec = wcs.dec
@@ -95,13 +96,13 @@ class AstapRunner(
             updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
 
             val allMatchedStars =
-                WellKnownDsoReader.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
+                WellKnownDsoSet.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
             val validMatchedStars = ArrayList<WellKnownDso>()
             // Since the image rectangle may not be aligned with the wcs coordinate system,
             // findInRange will report stars outside the image rectangle. Remove them.
             for (m in allMatchedStars) {
                 val px =
-                    convertWcsToPixel(m.wcs, dim, refPixel, refWcs, wcsToPixelMatrix)
+                    convertWcsToPixel(m.wcs, dim, refPixel, refCel, wcsToPixelMatrix)
                 if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
                 validMatchedStars.add(m)
             }
@@ -110,7 +111,7 @@ class AstapRunner(
                 version = Solution.CURRENT_VERSION,
                 params = solverParams,
                 refPixel = refPixel,
-                refWcs = refWcs,
+                refWcs = refCel,
                 imageDimension = dim,
                 imageName = imageName,
                 pixelToWcsMatrix = pixelToWcsMatrix,
@@ -118,7 +119,7 @@ class AstapRunner(
             )
             val js = Gson().toJson(solution)
             Log.d(TAG, "runastap: write result to $solutionJsonPath")
-            writeFileAtomic(solutionJsonPath, js)
+            writeFileAtomic(solutionJsonPath, js.toByteArray())
         }
     }
 
@@ -178,3 +179,4 @@ class AstapRunner(
         }
     }
 }
+

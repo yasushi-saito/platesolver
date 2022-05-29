@@ -1,24 +1,26 @@
 package com.yasushisaito.platesolver
 
 import android.content.res.AssetManager
-import java.io.BufferedReader
-import java.io.InputStream
-import java.io.InputStreamReader
+import android.util.Log
+import java.io.*
 import java.util.concurrent.locks.ReentrantLock
+import java.util.regex.Pattern
 import kotlin.concurrent.withLock
+
+const val TAG = "WellKnownDso"
 
 // Represents a well known deep sky object.
 data class WellKnownDso(
     // Gxy, OC, etc.
     // See page 19 of https://ngcicproject.observers.org/public_HCNGC/The_HCNGC_intro.pdf
     val typ: String,
-    val wcs: WcsCoordinate,
+    val wcs: CelestialCoordinate,
     // Visible magnitude
     val mag: Double,
     // List of names. An DSO may have multiple names, e.g., "M42", "NGC1976", "Orion nebula".
     // The order of names in the list is unspecified.
     val names: List<String>
-) {
+) : Serializable {
     override fun toString(): String {
         val namesString = names.joinToString("/")
         return "DeepSkyEntry(wcs=$wcs names=$namesString)"
@@ -28,88 +30,69 @@ data class WellKnownDso(
 
 // Parser for deep_sky.csv file. The format is described in the first two lines
 // the file
-class WellKnownDsoReader(stream: InputStream) {
+data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable {
     companion object {
         private val singletonMu = ReentrantLock()
-        private var singleton: WellKnownDsoReader? = null
-        private val callbacks = ArrayList<()->Unit>()
+        private var singleton: WellKnownDsoSet? = null
+        private val callbacks = ArrayList<() -> Unit>()
 
-        fun registerOnSingletonLoaded(cb: ()-> Unit) {
+        // Registers a function to be called when the singleton
+        // WellKnownDsoReader object is loaded. If the reader is already
+        // loaded at the point of the call, the  function will be called
+        // immediately in a background thread.
+        fun registerOnSingletonLoaded(cb: () -> Unit) {
             singletonMu.withLock {
                 if (singleton != null) {
-                    Thread({cb()}).start()
+                    Thread { cb() }.start()
                     return@withLock
                 }
                 callbacks.add(cb)
             }
         }
-        fun getSingleton(): WellKnownDsoReader? {
+
+        // Gets the singleton reader object. It returns non-null only after
+        // startLoadSingleton call.
+        fun getSingleton(): WellKnownDsoSet? {
             singletonMu.withLock {
                 return singleton
             }
         }
 
-        fun startLoadSingleton(assets: AssetManager) {
-            Thread({
+        data class WellKnownDsoEntry(val filename: String, val hash: String)
+
+        // Starts loading the singleton reader object. Idempotent.
+        // This function does not block.
+        fun startLoadSingleton(assets: AssetManager, cacheDir: File) {
+            val findWellKnownDsoFilename = fun(): String {
+                val filenames = assets.list("")
+                Log.d(TAG, "assets: $filenames")
+                for (f in filenames!!) {
+                    if (f.startsWith("wellknowndso_")) {
+                        return f
+                    }
+                }
+                throw Exception("wellknowndso*.csv not found in assets")
+            }
+            Thread {
                 singletonMu.withLock {
+                    val filename = findWellKnownDsoFilename()
+                    val cachePath = File(cacheDir, filename + ".data")
+                    singleton = readCache(cachePath)
                     if (singleton == null) {
-                        assets.open("wellknowndso.csv").use { inputStream ->
-                            singleton = WellKnownDsoReader(inputStream)
+                        Log.d(TAG, "reading asset $filename")
+                        assets.open(filename).use { inputStream ->
+                            singleton = parseCsv(inputStream)
                         }
+                        writeCache(singleton!!, cachePath)
                         for (cb in callbacks) {
                             cb()
                         }
                         callbacks.clear()
                     }
                 }
-            }).start()
+            }.start()
         }
-    }
-    private val entries = ArrayList<WellKnownDso>()
 
-    init {
-        parse(stream)
-    }
-
-    private fun parse(stream: InputStream) {
-        val reader = BufferedReader(InputStreamReader(stream))
-        // The first line is the header
-        reader.readLine()
-
-        while (true) {
-            val line = reader.readLine()?.trimIndent() ?: break
-            if (line.isEmpty()) continue
-            val cols = line.split(",")
-            if (cols.size != 5) {
-                throw Exception("Invalid line: $line")
-            }
-            val typ = cols[0]
-            // right ascension in range [0,360]
-            val ra = cols[1].toDouble()
-            // Convert it to range [-90, 90]
-            val dec = cols[2].toDouble()
-            // Visible magnitude
-            val mag = cols[3].toDouble()
-            val names = cols[4].split("/").map { it.lowercase() }
-            entries.add(WellKnownDso(typ=typ, wcs=WcsCoordinate(ra, dec), mag=mag, names=names))
-            if (names.contains("m42")) {
-                println("DEEPSKY: add ${entries.last()}")
-            }
-        }
-        // Sort entries by magnitude first (brighter first), then
-        // star types (non-star objects, such as nebulae are sorted before stars).
-        entries.sortWith(Comparator<WellKnownDso> { a, b ->
-            if (a.mag < b.mag) {
-                -1
-            } else if (a.mag > b.mag) {
-                1
-            } else if (a.typ != b.typ) {
-                if (a.typ == "Star") 1
-                else -1
-            } else {
-                0
-            }
-        })
     }
 
     fun findByName(wantName: String): WellKnownDso? {
@@ -122,12 +105,18 @@ class WellKnownDsoReader(stream: InputStream) {
         return null
     }
 
-    fun findInRange(minRa: Double, minDec: Double, maxRa: Double, maxDec: Double): ArrayList<WellKnownDso> {
+    fun findInRange(
+        minRa: Double,
+        minDec: Double,
+        maxRa: Double,
+        maxDec: Double
+    ): ArrayList<WellKnownDso> {
         val hits = ArrayList<WellKnownDso>()
         var n = 0
         for (ent in entries) {
             if (ent.wcs.ra in minRa..maxRa &&
-                ent.wcs.dec in minDec..maxDec) {
+                ent.wcs.dec in minDec..maxDec
+            ) {
                 hits.add(ent)
                 n++
                 if (n > 100) break
@@ -135,4 +124,79 @@ class WellKnownDsoReader(stream: InputStream) {
         }
         return hits
     }
+}
+
+// Serializes DSOs in a file in a fast binary format.
+private fun writeCache(dso: WellKnownDsoSet, cachePath: File) {
+    Log.d(TAG, "writeCache: dumping dso objects in $cachePath")
+    val bos = ByteArrayOutputStream()
+    val out = ObjectOutputStream(bos)
+    out.writeObject(dso)
+    out.flush()
+    writeFileAtomic(cachePath, bos.toByteArray())
+    Log.d(TAG, "writeCache: dumped dso objects in $cachePath")
+}
+
+// Reads the file created by writeCache. Returns null on any error.
+// Never raises exception.
+private fun readCache(cachePath: File): WellKnownDsoSet? {
+    try {
+        FileInputStream(cachePath).use { fd->
+            val stream = ObjectInputStream(BufferedInputStream(fd))
+            val dso = stream.readObject() as WellKnownDsoSet
+            Log.d(TAG, "readCache: successfully read dso objects with ${dso.entries.size} entries from $cachePath")
+            return dso
+        }
+    } catch (ex: Exception) {
+        Log.d(TAG, "readCache: exception $ex")
+        return null
+    }
+}
+
+// Parses wellknowndso*.csv.
+private fun parseCsv(stream: InputStream): WellKnownDsoSet {
+    val entries = ArrayList<WellKnownDso>()
+    val reader = BufferedReader(InputStreamReader(stream))
+    // The first line is the header
+    reader.readLine()
+
+    while (true) {
+        val line = reader.readLine()?.trimIndent() ?: break
+        if (line.isEmpty()) continue
+        val cols = line.split(",")
+        if (cols.size != 5) {
+            throw Exception("Invalid line: $line")
+        }
+        val typ = cols[0]
+        // right ascension in range [0,360]
+        val ra = cols[1].toDouble()
+        // Convert it to range [-90, 90]
+        val dec = cols[2].toDouble()
+        // Visible magnitude
+        val mag = cols[3].toDouble()
+        val names = cols[4].split("/").map { it.lowercase() }
+        entries.add(
+            WellKnownDso(
+                typ = typ,
+                wcs = CelestialCoordinate(ra, dec),
+                mag = mag,
+                names = names
+            )
+        )
+    }
+    // Sort entries by magnitude first (brighter first), then
+    // star types (non-star objects, such as nebulae are sorted before stars).
+    entries.sortWith { a, b ->
+        if (a.mag < b.mag) {
+            -1
+        } else if (a.mag > b.mag) {
+            1
+        } else if (a.typ != b.typ) {
+            if (a.typ == "Star") 1
+            else -1
+        } else {
+            0
+        }
+    }
+    return WellKnownDsoSet(entries)
 }

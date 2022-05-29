@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import java.io.File
 import java.time.Instant
 
+// Fragment for showing a solution.
 class ResultFragment : Fragment() {
     companion object {
         const val BUNDLE_KEY_SOLUTION_JSON_PATH = "solutionJsonPath"

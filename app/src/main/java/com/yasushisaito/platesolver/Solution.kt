@@ -4,39 +4,53 @@ import com.google.gson.Gson
 import java.io.File
 import java.io.FileReader
 
-// Convert pixel coordinate to WCS.
-fun convertPixelToWcs(
-    p: PixelCoordinate,
-    imageDimension: Wcs.ImageDimension,
-    refPixel: PixelCoordinate,
-    refWcs: WcsCoordinate,
-    matrix: Matrix22): WcsCoordinate {
-    val v = matrix.mult(Vector2(
-        p.x - refPixel.x,
-        imageDimension.height - p.y - refPixel.y))
-    return WcsCoordinate(ra = v.x + refWcs.ra, dec = v.y + refWcs.dec)
-}
+/*
 
-// Convert WCS to the pixel coordinate. Inverse of pixelToWcs.
-fun convertWcsToPixel(wcs: WcsCoordinate,
-                      imageDimension: Wcs.ImageDimension,
-                      refPixel: PixelCoordinate,
-                      refWcs: WcsCoordinate,
-                      matrix: Matrix22): PixelCoordinate {
-    val pv = matrix.mult(Vector2(wcs.ra - refWcs.ra, wcs.dec - refWcs.dec))
-    // wcsToPixel's Y coordinate moves up, but PixelCoordinate moves down.
-    return PixelCoordinate(
-        pv.x + refPixel.x,
-        (imageDimension.height - (pv.y + refPixel.y)))
-}
+ if mainwindow.flip_horizontal1.checked then flipH:=-1 else flipH:=+1;
+ if mainwindow.flip_vertical1.checked then flipV:=-1 else flipV:=+1;
+
+  cdelt1_a:=sqrt(CD1_1*CD1_1+CD1_2*CD1_2);{length of a pixel diagonal in direction RA in arcseconds}
+
+  moveToex(mainwindow.image_north_arrow1.Canvas.handle,round(xpos),round(ypos),nil);
+  det:=CD2_2*CD1_1-CD1_2*CD2_1;{this result can be negative !!}
+  dRa:=0;
+  dDec:=cdelt1_a*leng;
+  x := (CD1_2*dDEC - CD2_2*dRA) / det;
+  y := (CD1_1*dDEC - CD2_1*dRA) / det;
+  lineTo(mainwindow.image_north_arrow1.Canvas.handle,round(xpos-x*flipH),round(ypos-y*flipV)); {arrow line}
+  dRa:=cdelt1_a*-3;
+  dDec:=cdelt1_a*(leng-5);
+  x := (CD1_2*dDEC - CD2_2*dRA) / det;
+  y := (CD1_1*dDEC - CD2_1*dRA) / det;
+  lineTo(mainwindow.image_north_arrow1.Canvas.handle,round(xpos-x*flipH),round(ypos-y*flipV)); {arrow pointer}
+  dRa:=cdelt1_a*+3;
+  dDec:=cdelt1_a*(leng-5);
+  x := (CD1_2*dDEC - CD2_2*dRA) / det;
+  y := (CD1_1*dDEC - CD2_1*dRA) / det;
+  lineTo(mainwindow.image_north_arrow1.Canvas.handle,round(xpos-x*flipH),round(ypos-y*flipV)); {arrow pointer}
+  dRa:=0;
+  dDec:=cdelt1_a*leng;
+  x := (CD1_2*dDEC - CD2_2*dRA) / det;
+  y := (CD1_1*dDEC - CD2_1*dRA) / det;
+  lineTo(mainwindow.image_north_arrow1.Canvas.handle,round(xpos-x*flipH),round(ypos-y*flipV)); {arrow pointer}
+
+
+  moveToex(mainwindow.image_north_arrow1.Canvas.handle,round(xpos),round(ypos),nil);{east pointer}
+  dRa:= cdelt1_a*leng/3;
+  dDec:=0;
+  x := (CD1_2*dDEC - CD2_2*dRA) / det;
+  y := (CD1_1*dDEC - CD2_1*dRA) / det;
+  lineTo(mainwindow.image_north_arrow1.Canvas.handle,round(xpos-x*flipH),round(ypos-y*flipV)); {east pointer}
+
+*/
 
 data class Solution(
     val version: String,
     val params: SolverParameters,
     val imageName: String, // The user-defined filename of the image
-    val imageDimension: Wcs.ImageDimension,
+    val imageDimension: AstapResultReader.ImageDimension,
     val refPixel: PixelCoordinate,
-    val refWcs: WcsCoordinate,
+    val refWcs: CelestialCoordinate,
     val pixelToWcsMatrix: Matrix22,
     val matchedStars: ArrayList<WellKnownDso>,
 ) {
@@ -51,12 +65,12 @@ data class Solution(
         return true
     }
     // Convert pixel coordinate to WCS.
-    fun pixelToWcs(p: PixelCoordinate): WcsCoordinate {
+    fun pixelToWcs(p: PixelCoordinate): CelestialCoordinate {
         return convertPixelToWcs(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
     }
 
     // Convert WCS to the pixel coordinate. Inverse of pixelToWcs.
-    fun wcsToPixel(wcs: WcsCoordinate): PixelCoordinate {
+    fun wcsToPixel(wcs: CelestialCoordinate): PixelCoordinate {
         return convertWcsToPixel(wcs, imageDimension, refPixel, refWcs, wcsToPixelMatrix)
     }
 }
@@ -67,4 +81,3 @@ fun readSolution(jsonPath: File): Solution {
         return Gson().fromJson(stream, Solution::class.java)
     }
 }
-

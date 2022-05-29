@@ -10,7 +10,6 @@ import android.os.Message
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.view.View.OnFocusChangeListener
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -20,20 +19,21 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import java.io.File
-import java.io.InputStream
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import kotlin.math.atan
+import kotlin.math.tan
 
 // Convert the lens focal length (FX) to
 // the field of view of the image
 fun focalLengthToFov(lensmm: Double): Double {
-    val rad = 2 * Math.atan(36.0 / (2 * lensmm))
+    val rad = 2 * atan(36.0 / (2 * lensmm))
     return rad * 180 / Math.PI
 }
 
 fun fovToFocalLength(deg: Double): Double {
     val rad = deg / (180 / Math.PI)
-    return 18.0 / Math.tan(rad / 2)
+    return 18.0 / tan(rad / 2)
 }
 
 private fun isValidFovDeg(fovDeg: Double): Boolean {
@@ -82,7 +82,7 @@ class SetupFragment : Fragment() {
         if (savedInstanceState != null) {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
-        WellKnownDsoReader.registerOnSingletonLoaded { sendMessage(EVENT_DEEPSKYCSV_LOADED, "" as Object) }
+        WellKnownDsoSet.registerOnSingletonLoaded { sendMessage(EVENT_DEEPSKYCSV_LOADED, "" as Any) }
         return inflater.inflate(R.layout.fragment_setup, container, false)
     }
 
@@ -97,9 +97,9 @@ class SetupFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
         val degEdit = view.findViewById<EditText>(R.id.text_setup_fov_deg)
-        degEdit.setOnFocusChangeListener(OnFocusChangeListener { v, hasFocus ->
+        degEdit.setOnFocusChangeListener({ v, hasFocus ->
             if (!hasFocus) {
-                var deg: Double = 0.0
+                var deg = 0.0
                 try {
                     deg = degEdit.getText().toString().toDouble()
                 } catch (e: Exception) {
@@ -111,9 +111,9 @@ class SetupFragment : Fragment() {
             }
         })
         val focalLengthEdit = view.findViewById<EditText>(R.id.text_setup_fov_lens)
-        focalLengthEdit.setOnFocusChangeListener(OnFocusChangeListener { v, hasFocus ->
+        focalLengthEdit.setOnFocusChangeListener({ v, hasFocus ->
             if (!hasFocus) {
-                var mm: Double = 0.0
+                var mm = 0.0
                 try {
                     mm = focalLengthEdit.getText().toString().toDouble()
                 } catch (e: Exception) {
@@ -128,14 +128,14 @@ class SetupFragment : Fragment() {
             }
         })
         val pickFileButton = view.findViewById<Button>(R.id.setup_pick_file)
-        pickFileButton.setOnClickListener(View.OnClickListener { view ->
+        pickFileButton.setOnClickListener({ view ->
             val intent = Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
             pickFileLauncher.launch(intent)
         })
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setOnClickListener(View.OnClickListener { view ->
+        runButton.setOnClickListener({ view ->
             onRunAstap()
         })
         updateView()
@@ -156,7 +156,7 @@ class SetupFragment : Fragment() {
             imageNameText.setText("")
         }
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoReader.getSingleton() != null)
+        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoSet.getSingleton() != null)
     }
 
     var dialog: AstapDialogFragment? = null
@@ -167,14 +167,10 @@ class SetupFragment : Fragment() {
         println("HANDLER $msg dialog=$dialog")
         when (msg.what) {
             EVENT_MESSAGE -> {
-                dialog?.let {
-                    it.setMessage(msg.obj as String)
-                }
+                dialog?.setMessage(msg.obj as String)
             }
             EVENT_ERROR -> {
-                dialog?.let {
-                    it.setError(msg.obj as String)
-                }
+                dialog?.setError(msg.obj as String)
             }
             EVENT_SHOW_SOLUTION -> {
                 dialog = null
@@ -185,10 +181,10 @@ class SetupFragment : Fragment() {
                 updateView()
             }
             EVENT_SHOW_DIALOG -> {
-                dialog?.let { dialog ->                dialog.show(childFragmentManager, null) }
+                dialog?.show(childFragmentManager, null)
             }
             EVENT_DISMISS_DIALOG -> {
-                dialog?.let { dialog -> dialog.dismiss() }
+                dialog?.dismiss()
                 dialog = null
             }
             else -> throw Error("Invalid message $msg")
@@ -196,7 +192,7 @@ class SetupFragment : Fragment() {
         true
     }
 
-    private fun sendMessage(what: Int, message: Object) {
+    private fun sendMessage(what: Int, message: Any) {
         eventHandler.sendMessage(
             Message.obtain(eventHandler, what, message)
         )
@@ -207,12 +203,12 @@ class SetupFragment : Fragment() {
         }
 
         val activity = requireActivity()
-        var astapRunnerMu = ReentrantLock()
+        val astapRunnerMu = ReentrantLock()
         var astapRunner: AstapRunner? = null
         dialog = AstapDialogFragment(
             onAbort= {
                 astapRunnerMu.withLock {
-                    astapRunner?.let { it.abort() }
+                    astapRunner?.abort()
                 }
             },
             fovDeg = fovDeg,
@@ -231,8 +227,7 @@ class SetupFragment : Fragment() {
                 }
                 val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
                 val solverParams = SolverParameters(imagePath.absolutePath, fovDeg)
-                val solutionJsonPath =
-                    File(activity.getExternalFilesDir(null), "${solverParams.hashString()}.json")
+                val solutionJsonPath = File(getSolutionDir(activity), "${solverParams.hashString()}.json")
                 var solution: Solution? = null
                 try {
                     solution = readSolution(solutionJsonPath)
@@ -250,13 +245,13 @@ class SetupFragment : Fragment() {
                             onError = { message: String ->
                                 sendMessage(
                                     EVENT_ERROR,
-                                    message as Object
+                                    message as Any
                                 )
                             },
                             onMessage = { message: String ->
                                 sendMessage(
                                     EVENT_MESSAGE,
-                                    message as Object
+                                    message as Any
                                 )
                             },
                             solutionJsonPath = solutionJsonPath,
@@ -264,50 +259,23 @@ class SetupFragment : Fragment() {
                             imageName = getUriFilename(requireContext().contentResolver, imageUri!!)
                         )
                     }
-                    sendMessage(EVENT_SHOW_DIALOG, "" as Object)
+                    sendMessage(EVENT_SHOW_DIALOG, "" as Any)
                     if (!imagePath.exists()) {
                         copyUriTo(activity.contentResolver, imageUri!!, imagePath)
-                        sendMessage(EVENT_MESSAGE, "copied file" as Object)
+                        sendMessage(EVENT_MESSAGE, "copied file" as Any)
                     } else {
-                        sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Object)
+                        sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Any)
                     }
                     astapRunner!!.run()
-                    sendMessage(EVENT_DISMISS_DIALOG, "" as Object)
+                    sendMessage(EVENT_DISMISS_DIALOG, "" as Any)
                 }
                 if (!solutionJsonPath.exists()) {
                     throw Error("could not build solution")
                 }
-                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Object)
+                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
         }).start()
     }
 
-    private fun runAstap(imagePath: File, fovDeg: Double) {
-        val cmdline = arrayOf(
-            getAstapCliPath(requireContext()).path,
-            "-f", imagePath.path,
-            "-d", getStarDbDir(requireContext()).path,
-            "-fov", fovDeg.toString(),
-        )
-        Log.d(TAG, "runastap: cmdline=${cmdline.contentToString()}")
-        val proc: Process = Runtime.getRuntime().exec(cmdline, null, imagePath.parentFile)
-        val readOutputs = fun(stream: InputStream) {
-            Thread {
-                val buf = ByteArray(8192)
-                while (true) {
-                    val len = stream.read(buf)
-                    if (len < 0) break
-                    System.out.write(buf, 0, len)
-                }
-            }.start()
-        }
-        readOutputs(proc.inputStream)
-        readOutputs(proc.errorStream)
-        val exitCode = proc.waitFor()
-        if (exitCode != 0) {
-            Log.d(TAG, "runastap: exitcode=$exitCode")
-            return
-        }
-    }
     fun startSolutionFragment(solutionJsonPath: String) {
         val bundle = Bundle()
         bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, solutionJsonPath)

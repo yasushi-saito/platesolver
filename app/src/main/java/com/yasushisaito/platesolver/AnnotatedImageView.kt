@@ -16,30 +16,44 @@ import kotlin.math.sin
 
 private data class CanvasCoordinate(val x: Double, val y: Double)
 
-private data class LabelCircle(val centerX: Double, val centerY: Double, val radius: Double, val label: String) {
-        init {
-            assert(radius > 0.0) { Log.e("Circle", "$radius") }
-        }
-        fun overlaps(r: LabelRect): Boolean {
-            return (centerX >= r.minX - radius &&
-                    centerX <= r.maxX + radius &&
-                    centerY >= r.minY - radius &&
-                    centerY <= r.maxY + radius)
+private data class LabelCircle(
+    val centerX: Double,
+    val centerY: Double,
+    val radius: Double,
+    val label: String
+) {
+    init {
+        assert(radius > 0.0) { Log.e("Circle", "$radius") }
+    }
 
-        }
+    fun overlaps(r: LabelRect): Boolean {
+        return (centerX >= r.minX - radius &&
+                centerX <= r.maxX + radius &&
+                centerY >= r.minY - radius &&
+                centerY <= r.maxY + radius)
+
     }
-private data class LabelRect(val minX: Double, val minY: Double, val maxX: Double, val maxY: Double, val label: String) {
-        init {
-            assert(minX <= maxX) { Log.e("LabelRect", "$minX $maxX") }
-            assert(minY <= maxY) { Log.e("LabelRect", "$minY $maxY") }
-        }
-        fun overlaps(r: LabelRect): Boolean {
-            return (minX < r.maxX &&
-                    maxX > r.minX &&
-                    minY < r.maxY &&
-                    maxY > r.minY)
-        }
+}
+
+private data class LabelRect(
+    val minX: Double,
+    val minY: Double,
+    val maxX: Double,
+    val maxY: Double,
+    val label: String
+) {
+    init {
+        assert(minX <= maxX) { Log.e("LabelRect", "$minX $maxX") }
+        assert(minY <= maxY) { Log.e("LabelRect", "$minY $maxY") }
     }
+
+    fun overlaps(r: LabelRect): Boolean {
+        return (minX < r.maxX &&
+                maxX > r.minX &&
+                minY < r.maxY &&
+                maxY > r.minY)
+    }
+}
 
 private class ConflictDetector {
     private val circles = ArrayList<LabelCircle>()
@@ -73,7 +87,7 @@ data class CanvasDimension(val width: Float, val height: Float)
 
 private fun pixelCoordToCanvasCoord(
     p: PixelCoordinate,
-    imageDim: Wcs.ImageDimension,
+    imageDim: AstapResultReader.ImageDimension,
     canvasDim: CanvasDimension,
 ): CanvasCoordinate {
     return CanvasCoordinate(
@@ -97,7 +111,7 @@ private data class LabelPlacement(
 private fun placeLabels(
     solution: Solution,
     paint: Paint,
-    imageDim: Wcs.ImageDimension,
+    imageDim: AstapResultReader.ImageDimension,
     canvasDim: CanvasDimension,
     scaleFactor: Float
 ): ArrayList<LabelPlacement> {
@@ -167,12 +181,14 @@ private fun placeLabels(
         }
         conflictDetector.addRect(bestRect!!)
         val center = pixelCoordToCanvasCoord(solution.wcsToPixel(e.wcs), imageDim, canvasDim)
-        placements.add(LabelPlacement(
-            circle = LabelCircle(center.x, center.y, circleRadius, label=name),
-            label = bestRect,
-            labelOffX = -bestOffX,
-            labelOffY = -bestOffY
-        ))
+        placements.add(
+            LabelPlacement(
+                circle = LabelCircle(center.x, center.y, circleRadius, label = name),
+                label = bestRect,
+                labelOffX = -bestOffX,
+                labelOffY = -bestOffY
+            )
+        )
     }
     return placements
 }
@@ -194,7 +210,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private var labelPlacements = ArrayList<LabelPlacement>()
 
     companion object {
-        private const val TAG = "AnnotatedImageView"
         private const val MIN_ZOOM = 0.1f
         private const val MAX_ZOOM = 10f
     }
@@ -247,25 +262,26 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         )
 
         paint.color = Color.parseColor("#00e0e0")
-        for (i in 0..solution.matchedStars.size-1) {
+        for (i in 0 until solution.matchedStars.size) {
             val e = solution.matchedStars[i]
             val placement = labelPlacements[i]
 
             val px = solution.wcsToPixel(e.wcs)
-            val c = pixelCoordToCanvasCoord(px)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 4f / scaleFactor
             canvas.drawCircle(
                 placement.circle.centerX.toFloat(),
                 placement.circle.centerY.toFloat(),
                 placement.circle.radius.toFloat(),
-                paint)
+                paint
+            )
             canvas.drawLine(
                 placement.circle.centerX.toFloat(),
                 placement.circle.centerY.toFloat(),
                 (placement.label.minX + placement.labelOffX).toFloat(),
                 (placement.label.minY + placement.labelOffY).toFloat(),
-                paint)
+                paint
+            )
 
             paint.style = Paint.Style.FILL
             canvas.drawText(

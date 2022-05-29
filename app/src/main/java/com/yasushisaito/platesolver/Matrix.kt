@@ -12,7 +12,7 @@ data class Matrix22(val v00: Double, val v01: Double, val v10: Double, val v11: 
     }
 
     fun invert(): Matrix22 {
-        val scale = 1.0 / (v00*v11 - v01*v10)
-        return Matrix22(v11 * scale, -v01 * scale, -v10 * scale, v00 * scale)
+        val det = 1.0 / (v00*v11 - v01*v10)
+        return Matrix22(v11 * det, -v01 * det, -v10 * det, v00 * det)
     }
 }

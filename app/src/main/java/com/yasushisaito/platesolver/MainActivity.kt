@@ -21,19 +21,6 @@ import com.google.android.material.navigation.NavigationView
 import java.io.*
 import java.security.MessageDigest
 
-
-// Writes the given contents to the file. It guarantees that
-// either the file is created with the full contents, or the file does
-// not exist.
-fun writeFileAtomic(path: File, contents: String) {
-    path.delete()
-    val tmpPath = File.createTempFile("tmp", "tmp", path.parentFile)
-    FileOutputStream(tmpPath).use { stream ->
-        stream.write(contents.toByteArray())
-    }
-    tmpPath.renameTo(path)
-}
-
 // Computes a sha256 hex digest of the stream contents.
 fun inputStreamDigest(stream: InputStream): String {
     val digest = MessageDigest.getInstance("SHA-256")
@@ -78,9 +65,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         ft.add(R.id.content_frame, fragment)
         ft.commit()
 
-        WellKnownDsoReader.startLoadSingleton(assets)
+        WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
 
-        Thread(Runnable {
+        Thread({
             val astapCliPath = getAstapCliPath(this)
             assets.open("astap_cli").use { inputStream ->
                 FileOutputStream(astapCliPath).use { outputStream ->

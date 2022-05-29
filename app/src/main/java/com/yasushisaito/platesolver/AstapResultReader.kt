@@ -5,7 +5,9 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.text.ParseException
 
-class Wcs(stream: InputStream) {
+// Reads a *.ini or *.wcs file produced by astap_cli
+// It produces a key/value pairs.
+class AstapResultReader(stream: InputStream) {
     companion object {
         const val CRPIX1 = "CRPIX1" // X of the reference pixel
         const val CRPIX2 = "CRPIX2" // Y of the reference pixel
@@ -58,24 +60,6 @@ class Wcs(stream: InputStream) {
     fun getWarnings(): ArrayList<String> {
         return warnings
     }
-
-    /*
-    // Convert pixel coordinate to WCS.
-    fun pixelToWcs(p: PixelCoordinate): WcsCoordinate {
-        val v = pixelToWcs.mult(Vector2(
-            p.x - refPixel.x,
-            imageDimension.height - p.y - refPixel.y))
-        return WcsCoordinate(ra = v.x + refWcs.ra, dec = v.y + refWcs.dec)
-    }
-
-    fun wcsToPixel(wcs: WcsCoordinate): PixelCoordinate {
-        val pv = wcsToPixel.mult(Vector2(wcs.ra - refWcs.ra, wcs.dec - refWcs.dec))
-        // wcsToPixel's Y coordinate moves up, but PixelCoordinate moves down.
-        return PixelCoordinate(
-            pv.x + refPixel.x,
-            (imageDimension.height - (pv.y + refPixel.y)))
-    }
-*/
 
     private fun parse(stream: InputStream) {
         val numOrBoolRe = Regex("^([A-Z0-9-_]+)\\s*=\\s*([0-9.+-eETF]+)")

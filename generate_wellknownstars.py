@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import csv
+import time
 from dataclasses import dataclass
 from typing import List
 import re
@@ -131,7 +132,10 @@ def read_dso_csv() -> List[DeepSkyObject]:
 def main():
     dsos = read_dso_csv()
     dsos += read_hygfull_csv()
-    with open("./app/src/main/assets/wellknowndso.csv", "w") as fd:
+
+    now = time.strftime("%Y%m%dT%H%M%S", time.gmtime())
+
+    with open(f"./app/src/main/assets/wellknowndso_{now}.csv", "w") as fd:
         fd.write("typ,ra,dec,mag,names\n")
         for dso in dsos:
             names = "/".join(dso.names)

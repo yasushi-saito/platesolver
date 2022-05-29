@@ -8,23 +8,40 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
+    <TextView
+        android:id="@+id/text_setup_searchstart_dec"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Dec"
+        app:layout_constraintBaseline_toBaselineOf="@+id/text_setup_searchstart_ra"
+        app:layout_constraintStart_toStartOf="@+id/guideline10" />
+
+    <TextView
+        android:id="@+id/text_setup_searchstart_ra"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RA"
+        app:layout_constraintBaseline_toBaselineOf="@+id/autocomplete_setup_searchstart"
+        app:layout_constraintStart_toStartOf="@+id/guideline5" />
+
     <Button
         android:id="@+id/setup_pick_file"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginStart="4dp"
         android:text="Pick File"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/text_setup_fov_lens" />
+        tools:layout_editor_absoluteY="61dp" />
 
     <Button
         android:id="@+id/setup_install_stardb"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
         android:onClick="onInstallStarDb"
         android:text="Install\nStar DB (h17)"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/setup_pick_file" />
+        app:layout_constraintTop_toBottomOf="@+id/autocomplete_setup_searchstart" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
@@ -39,25 +56,6 @@
         android:layout_height="wrap_content"
         app:barrierDirection="left"
         app:constraint_referenced_ids="fragment_setup" />
-
-    <TextView
-        android:id="@+id/label_setup_fov"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:text="Field of view"
-        app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <EditText
-        android:id="@+id/text_setup_fov_deg"
-        android:layout_width="100dp"
-        android:layout_height="wrap_content"
-        android:digits="0123456789."
-        android:ems="10"
-        android:inputType="number"
-        app:layout_constraintBaseline_toBaselineOf="@+id/textView3"
-        app:layout_constraintStart_toEndOf="@+id/textView3" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline4"
@@ -78,12 +76,34 @@
         android:id="@+id/text_setup_fov_lens"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="20dp"
         android:digits="0123456789."
         android:ems="10"
         android:inputType="number"
         app:layout_constraintStart_toStartOf="@+id/guideline4"
         app:layout_constraintTop_toBottomOf="@+id/label_setup_fov" />
+
+    <TextView
+        android:id="@+id/label_setup_fov"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="16dp"
+        android:text="Field of view"
+        app:layout_constraintStart_toStartOf="@+id/guideline3"
+        app:layout_constraintTop_toBottomOf="@+id/setup_pick_file" />
+
+    <EditText
+        android:id="@+id/text_setup_fov_deg"
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:digits="0123456789."
+        android:ems="10"
+        android:inputType="number"
+        app:layout_constraintBaseline_toBaselineOf="@+id/textView3"
+        app:layout_constraintStart_toEndOf="@+id/textView3" />
 
     <TextView
         android:id="@+id/textView3"
@@ -123,6 +143,32 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_begin="234dp" />
+        app:layout_constraintGuide_begin="188dp" />
+
+    <AutoCompleteTextView
+        android:id="@+id/autocomplete_setup_searchstart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Auto"
+        app:layout_constraintStart_toStartOf="@+id/guideline4"
+        app:layout_constraintTop_toBottomOf="@+id/textView8" />
+
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="16dp"
+        android:text="Search start"
+        app:layout_constraintStart_toStartOf="@+id/guideline3"
+        app:layout_constraintTop_toBottomOf="@+id/text_setup_fov_lens" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline10"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_begin="313dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
