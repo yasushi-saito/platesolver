@@ -8,12 +8,12 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.Log
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
-import android.widget.TextView
+import android.view.inputmethod.EditorInfo
+import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +40,17 @@ private fun isValidFovDeg(fovDeg: Double): Boolean {
     return fovDeg > 0 && fovDeg < 90.0
 }
 
+private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
+    edit.setOnEditorActionListener { v, actionId, event ->
+        if (actionId == 0) cb(edit)
+        false
+    }
+    edit.setOnFocusChangeListener({ v, hasFocus ->
+        if (!hasFocus) cb(edit)
+    })
+}
+
+
 class SetupFragment : Fragment() {
     companion object {
         const val TAG = "SetupFragment"
@@ -51,10 +62,10 @@ class SetupFragment : Fragment() {
         const val EVENT_SHOW_SOLUTION = 3
         const val EVENT_SHOW_DIALOG = 4
         const val EVENT_DISMISS_DIALOG = 5
-        const val EVENT_DEEPSKYCSV_LOADED = 6
+        const val EVENT_WELLKNOWNDSO_LOADED = 6
     }
 
-    private  var fovDeg: Double = DEFAULT_FOV_DEG
+    private var fovDeg: Double = DEFAULT_FOV_DEG
     private var imageUri: Uri? = null
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
@@ -82,7 +93,7 @@ class SetupFragment : Fragment() {
         if (savedInstanceState != null) {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
-        WellKnownDsoSet.registerOnSingletonLoaded { sendMessage(EVENT_DEEPSKYCSV_LOADED, "" as Any) }
+        WellKnownDsoSet.registerOnSingletonLoaded { sendMessage(EVENT_WELLKNOWNDSO_LOADED, "" as Any) }
         return inflater.inflate(R.layout.fragment_setup, container, false)
     }
 
@@ -96,37 +107,34 @@ class SetupFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
-        val degEdit = view.findViewById<EditText>(R.id.text_setup_fov_deg)
-        degEdit.setOnFocusChangeListener({ v, hasFocus ->
-            if (!hasFocus) {
-                var deg = 0.0
-                try {
-                    deg = degEdit.getText().toString().toDouble()
-                } catch (e: Exception) {
-                }
+
+        // Handle FOV degree changes
+        setOnChangeListener(view.findViewById<EditText>(R.id.text_setup_fov_deg)) { edit ->
+            var deg = 0.0
+            try {
+                deg = edit.getText().toString().toDouble()
+            } catch (e: Exception) {
+            }
+            if (isValidFovDeg(deg)) {
+                fovDeg = deg
+            }
+            updateView()
+        }
+        // Handle FOV lens focal length changes
+        setOnChangeListener(view.findViewById<EditText>(R.id.text_setup_fov_lens)) { edit ->
+            var mm = 0.0
+            try {
+                mm = edit.getText().toString().toDouble()
+            } catch (e: Exception) {
+            }
+            if (mm > 0 || mm < 10000) {
+                val deg = focalLengthToFov(mm)
                 if (isValidFovDeg(deg)) {
                     fovDeg = deg
                 }
-                updateView()
             }
-        })
-        val focalLengthEdit = view.findViewById<EditText>(R.id.text_setup_fov_lens)
-        focalLengthEdit.setOnFocusChangeListener({ v, hasFocus ->
-            if (!hasFocus) {
-                var mm = 0.0
-                try {
-                    mm = focalLengthEdit.getText().toString().toDouble()
-                } catch (e: Exception) {
-                }
-                if (mm > 0 || mm < 10000) {
-                    val deg = focalLengthToFov(mm)
-                    if (isValidFovDeg(deg)) {
-                        fovDeg = deg
-                    }
-                }
-                updateView()
-            }
-        })
+            updateView()
+        }
         val pickFileButton = view.findViewById<Button>(R.id.setup_pick_file)
         pickFileButton.setOnClickListener({ view ->
             val intent = Intent()
@@ -141,8 +149,45 @@ class SetupFragment : Fragment() {
         updateView()
     }
 
+    // List of DSO names extracted from WellKnownDsoSet.
+    private var wellKnownDsoArray: ArrayAdapter<String>? = null;
+    // Maps DSO names in the above -> WellKnownDso objects
+    private val wellKnownDsoNameMap = HashMap<String, WellKnownDso>()
+
     private fun updateView() {
         val view: View = thisView ?: return
+
+        // Set autocompletion list for well-known deep sky objects.
+        // Note that the list is loaded in a separate thread, so we need to
+        // delay filling the list until dsoSet becomes non-null.
+        // Once dsoSet becomes nonnull, its value never changes.
+        val dsoSet = WellKnownDsoSet.getSingleton()
+        if (dsoSet != null && wellKnownDsoArray == null) {
+            val dsos = ArrayList<String>()
+            for (e in dsoSet.entries) {
+                for (name in e.names) {
+                    dsos.add(name)
+                    wellKnownDsoNameMap[name] = e
+                }
+            }
+            wellKnownDsoArray = ArrayAdapter<String>(
+                requireActivity(),
+                android.R.layout.simple_dropdown_item_1line,
+                dsos)
+            val dsoView = view.findViewById<AutoCompleteTextView>(R.id.autocomplete_setup_searchstart)
+            dsoView.setAdapter(wellKnownDsoArray)
+            dsoView.setDropDownWidth(400)
+            setOnChangeListener(dsoView) {
+                val value = dsoView.getText().toString()
+                if (!wellKnownDsoNameMap.containsKey(value)) {
+                    dsoView.setText("")
+                    return@setOnChangeListener
+                }
+                val dso = wellKnownDsoNameMap[value] as WellKnownDso
+                Log.d(TAG, "dsoview selected $dso")
+            }
+        }
+
         val degEdit = view.findViewById<EditText>(R.id.text_setup_fov_deg)
         degEdit.setText("%.2f".format(fovDeg))
 
@@ -176,8 +221,8 @@ class SetupFragment : Fragment() {
                 dialog = null
                 startSolutionFragment(msg.obj as String)
             }
-            EVENT_DEEPSKYCSV_LOADED -> {
-                Log.d(TAG, "deepskycsv loaded")
+            EVENT_WELLKNOWNDSO_LOADED -> {
+                Log.d(TAG, "wellknowndso loaded")
                 updateView()
             }
             EVENT_SHOW_DIALOG -> {
