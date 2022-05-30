@@ -9,19 +9,13 @@
     tools:context=".MainActivity">
 
     <TextView
-        android:id="@+id/text_setup_searchstart_dec"
+        android:id="@+id/text_setup_searchstart_ra_dec"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Dec"
-        app:layout_constraintBaseline_toBaselineOf="@+id/text_setup_searchstart_ra"
-        app:layout_constraintStart_toStartOf="@+id/guideline10" />
-
-    <TextView
-        android:id="@+id/text_setup_searchstart_ra"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="RA"
-        app:layout_constraintBaseline_toBaselineOf="@+id/autocomplete_setup_searchstart"
+        android:maxLines="2"
+        android:minLines="2"
+        android:text="Auto"
+        app:layout_constraintBottom_toBottomOf="@+id/autocomplete_setup_searchstart"
         app:layout_constraintStart_toStartOf="@+id/guideline5" />
 
     <Button
@@ -79,8 +73,8 @@
         android:layout_marginTop="20dp"
         android:digits="0123456789."
         android:ems="10"
-        android:inputType="number"
         android:imeOptions="actionNext"
+        android:inputType="number"
         app:layout_constraintStart_toStartOf="@+id/guideline4"
         app:layout_constraintTop_toBottomOf="@+id/label_setup_fov" />
 
@@ -101,8 +95,8 @@
         android:layout_marginStart="4dp"
         android:digits="0123456789."
         android:ems="10"
-        android:inputType="text|number"
         android:imeOptions="actionNext"
+        android:inputType="text|number"
         app:layout_constraintBaseline_toBaselineOf="@+id/textView3"
         app:layout_constraintStart_toEndOf="@+id/textView3" />
 
@@ -151,8 +145,8 @@
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:inputType="text"
         android:imeOptions="actionNext"
+        android:inputType="text"
         app:layout_constraintStart_toStartOf="@+id/guideline4"
         app:layout_constraintTop_toBottomOf="@+id/textView8" />
 

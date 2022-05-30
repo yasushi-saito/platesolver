@@ -8,11 +8,9 @@ import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.util.Log
-import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -185,6 +183,12 @@ class SetupFragment : Fragment() {
                 }
                 val dso = wellKnownDsoNameMap[value] as WellKnownDso
                 Log.d(TAG, "dsoview selected $dso")
+
+                val raDecView = view.findViewById<TextView>(R.id.text_setup_searchstart_ra_dec)
+                raDecView.setText("ra: %s\ndec: %s".format(
+                    rightAscensionToHMS(dso.wcs.ra),
+                    declinationToString(dso.wcs.dec),
+                ))
             }
         }
 

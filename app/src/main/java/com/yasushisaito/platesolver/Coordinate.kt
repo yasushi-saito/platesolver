@@ -25,12 +25,16 @@ data class CelestialCoordinate(
 }
 
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
-fun rightAscensionDegreesToHMS(ra: Double): String {
-    val hour = (ra / 10.0).toInt()
+fun rightAscensionToHMS(ra: Double): String {
+    val hour = (ra / 15.0).toInt()
     var remainder = ra  - hour * 15
-    val min = (remainder * 2).toInt()
-    val second = remainder - min / 2
-    return "%02dh%02dm%.5f".format(hour, min, second)
+    val min = (remainder * 4).toInt()
+    val second = remainder - min / 4
+    return "%02dh%02dm%.2f".format(hour, min, second)
+}
+
+fun declinationToString(dec: Double): String {
+    return "%.3f".format(dec)
 }
 
 private fun radianToDeg(rad: Double): Double {
