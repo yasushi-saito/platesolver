@@ -185,12 +185,7 @@ class SetupFragment : Fragment() {
                     dsoView.setText("")
                     raDecView.setText("Auto")
                 } else {
-                    raDecView.setText(
-                        "ra: %s\ndec: %s".format(
-                            rightAscensionToString(startSearch!!.cel.ra),
-                            declinationToString(startSearch!!.cel.dec),
-                        )
-                    )
+                    raDecView.setText(startSearch!!.cel.toDisplayString())
                 }
             }
         }

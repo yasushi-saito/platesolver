@@ -24,16 +24,6 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/label_corners"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Coordinates at corners"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="@+id/guideline_left0"
-        app:layout_constraintTop_toBottomOf="@+id/label_fov" />
-
-    <TextView
         android:id="@+id/label_image"
         android:layout_width="0dp"
         android:layout_height="19dp"
@@ -120,48 +110,6 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        android:id="@+id/text_corner00"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:gravity="start|top"
-        android:text="0.0 / 0.0"
-        app:layout_constraintEnd_toStartOf="@+id/guideline2"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/guideline_left1"
-        app:layout_constraintTop_toBottomOf="@+id/label_corners" />
-
-    <TextView
-        android:id="@+id/text_corner01"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="start|top"
-        android:text="0.0 / 0.0"
-        app:layout_constraintEnd_toStartOf="@+id/guideline2"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="@+id/guideline_left1"
-        app:layout_constraintTop_toBottomOf="@+id/text_corner00" />
-
-    <TextView
-        android:id="@+id/text_corner10"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:gravity="start|top"
-        android:text="0.0 / 0.0"
-        app:layout_constraintBaseline_toBaselineOf="@+id/text_corner00"
-        app:layout_constraintStart_toStartOf="@+id/guideline2" />
-
-    <TextView
-        android:id="@+id/text_corner11"
-        android:layout_width="120dp"
-        android:layout_height="wrap_content"
-        android:gravity="start|top"
-        android:text="0.0 / 0.0"
-        app:layout_constraintBaseline_toBaselineOf="@+id/text_corner01"
-        app:layout_constraintStart_toStartOf="@+id/guideline2" />
-
-    <TextView
         android:id="@+id/label_corners2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -169,7 +117,7 @@
         android:text="Show matched objects"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
-        app:layout_constraintTop_toBottomOf="@+id/text_corner01" />
+        app:layout_constraintTop_toBottomOf="@+id/label_fov" />
 
     <TextView
         android:id="@+id/textView7"
@@ -207,6 +155,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/seekbar_matchedstars" />
+        app:layout_constraintTop_toBottomOf="@+id/seekbar_matchedstars"
+        app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

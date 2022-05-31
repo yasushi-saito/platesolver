@@ -108,7 +108,10 @@ private data class LabelPlacement(
     val labelOffY: Double,
 )
 
-private fun placeLabels(
+// Compute the locations of DSO (deep sky object) labels.
+// They are placed close to their location in the image,
+// and preferably they don't overlap.
+private fun placeDsoLabels(
     solution: Solution,
     paint: Paint,
     imageDim: AstapResultReader.ImageDimension,
@@ -239,8 +242,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         //  (otherwise it'll break the panning code)
         paint.textSize = 32f / scaleFactor
 
-        if (labelPlacements.isEmpty()) {
-            labelPlacements = placeLabels(
+        if (labelPlacements.isEmpty()) { // The first call, or the scaleFactor changed.
+            labelPlacements = placeDsoLabels(
                 solution = solution,
                 canvasDim = CanvasDimension(width.toFloat(), height.toFloat()),
                 imageDim = solution.imageDimension,
@@ -269,12 +272,14 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             val px = solution.wcsToPixel(e.cel)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 4f / scaleFactor
-            canvas.drawCircle(
-                placement.circle.centerX.toFloat(),
-                placement.circle.centerY.toFloat(),
-                placement.circle.radius.toFloat(),
-                paint
-            )
+            if (false) {
+                canvas.drawCircle(
+                    placement.circle.centerX.toFloat(),
+                    placement.circle.centerY.toFloat(),
+                    placement.circle.radius.toFloat(),
+                    paint
+                )
+            }
             canvas.drawLine(
                 placement.circle.centerX.toFloat(),
                 placement.circle.centerY.toFloat(),
@@ -291,9 +296,88 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 paint
             )
         }
+
+        paint.color = Color.parseColor("#000000")
+        paint.textSize = 40f / scaleFactor
+        drawCelestialCoordinate(
+            PixelCoordinate(0.0, 0.0),
+            -20f, -20f,
+            solution,
+            CanvasDimension(width.toFloat(), height.toFloat()),
+            scaleFactor,
+            paint,
+            canvas,
+        )
+        drawCelestialCoordinate(
+            PixelCoordinate(solution.imageDimension.width.toDouble(), 0.0),
+            20f, -20f,
+            solution,
+            CanvasDimension(width.toFloat(), height.toFloat()),
+            scaleFactor,
+            paint,
+            canvas,
+        )
+        drawCelestialCoordinate(
+            PixelCoordinate(0.0, solution.imageDimension.height.toDouble()),
+            -20f, 20f,
+            solution,
+            CanvasDimension(width.toFloat(), height.toFloat()),
+            scaleFactor,
+            paint,
+            canvas,
+        )
+        drawCelestialCoordinate(
+            PixelCoordinate(
+                solution.imageDimension.width.toDouble(),
+                solution.imageDimension.height.toDouble()),
+            20f, 20f,
+            solution,
+            CanvasDimension(width.toFloat(), height.toFloat()),
+            scaleFactor,
+            paint,
+            canvas,
+        )
         canvas.restore()
     }
 
+    private fun drawCelestialCoordinate(
+        px: PixelCoordinate,
+        baseX: Float,
+        baseY: Float,
+        solution: Solution,
+        canvasDim: CanvasDimension,
+        scaleFactor: Float,
+        paint: Paint,
+        canvas: Canvas
+    ) {
+        val c = solution.pixelToCelestial(px)
+        // https://stackoverflow.com/questions/6756975/draw-multi-line-text-to-canvas
+        val texts = c.toDisplayString().split("\n")
+        var textWidth = -1
+        val thisRect = Rect()
+        for (text in texts) {
+            paint.getTextBounds(text, 0, text.length, thisRect)
+            textWidth = Integer.max(textWidth, thisRect.right - thisRect.left)
+        }
+        val textHeight = (texts.size-1) * paint.textSize
+
+        val offX = if (baseX >= 0) 0.0 else textWidth.toDouble()
+        val offY = if (baseY >= 0) -textHeight.toDouble() else 0.0
+        val cx = pixelCoordToCanvasCoord(px)
+
+        var y = cx.y + baseY - offY
+        for (text in texts) {
+            canvas.drawText(text,
+                (cx.x + baseX - offX).toFloat(),
+                y.toFloat(),
+                paint)
+            y += paint.textSize
+        }
+        canvas.drawLine(cx.x.toFloat(), cx.y.toFloat(),
+            (cx.x + baseX).toFloat(),
+            (cx.y + baseY).toFloat(),
+            paint)
+    }
     // performClick isn't being overridden (should be for accessibility purposes), but it doesn't
     //  really matter here.
     @SuppressLint("ClickableViewAccessibility")

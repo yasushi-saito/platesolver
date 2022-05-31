@@ -22,6 +22,12 @@ data class CelestialCoordinate(
         val ddec = (dec - other.dec)
         return Math.sqrt(dra*dra + ddec*ddec)
     }
+
+    fun toDisplayString(): String {
+        return "ra: %s\ndec: %s".format(
+            rightAscensionToString(ra),
+            declinationToString(dec))
+    }
 }
 
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
@@ -29,7 +35,7 @@ fun rightAscensionToString(ra: Double): String {
     val hour = (ra / 15.0).toInt()
     var remainder = ra  - hour * 15
     val min = (remainder * 4).toInt()
-    val second = remainder - min / 4
+    val second = (remainder - min / 4) * 60
     return "%02dh%02dm%.2f".format(hour, min, second)
 }
 
@@ -53,7 +59,8 @@ private fun cosDeg(deg: Double): Double {
     return Math.cos(degToRadian(deg))
 }
 
-private val PIXEL_BIN_FACTOR = 57.5
+//private val PIXEL_BIN_FACTOR = 57.5
+private val PIXEL_BIN_FACTOR = 180 / Math.PI // ??
 
 // Convert pixel coordinate to WCS.
 //

@@ -64,7 +64,7 @@ data class Solution(
         return true
     }
     // Convert pixel coordinate to WCS.
-    fun pixelToWcs(p: PixelCoordinate): CelestialCoordinate {
+    fun pixelToCelestial(p: PixelCoordinate): CelestialCoordinate {
         return convertPixelToCelestial(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
     }
 

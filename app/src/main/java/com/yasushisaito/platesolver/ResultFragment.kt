@@ -26,7 +26,6 @@ class ResultFragment : Fragment() {
         val jsonPath = arguments?.getString(BUNDLE_KEY_SOLUTION_JSON_PATH)
             ?: throw Error("$BUNDLE_KEY_SOLUTION_JSON_PATH not found")
         solution = readSolution(File(jsonPath))
-        println("RESULTFLAG: found solution: $solution")
         return inflater.inflate(R.layout.fragment_result, container, false)
     }
 
@@ -37,14 +36,9 @@ class ResultFragment : Fragment() {
         val annotatedImageView = view.findViewById<AnnotatedImageView>(R.id.view_annotatedimage)
         annotatedImageView.setSolution(solution)
         val setText = fun(viewId: Int, value: String) {
-            var text = view.findViewById<TextView>(viewId)
-            text.setText(value)
+            view.findViewById<TextView>(viewId).setText(value)
         }
 
-        val setCoord = fun(px: Double, py: Double, viewId: Int) {
-            val wcsCoord = solution.pixelToWcs(PixelCoordinate(px, py))
-            setText(viewId, "ra:%s dec:%s".format(rightAscensionToString(wcsCoord.ra), declinationToString(wcsCoord.dec)))
-        }
         setText(
             R.id.text_result_imagedimension,
             "%d*%d".format(solution.imageDimension.width, solution.imageDimension.height)
@@ -54,13 +48,5 @@ class ResultFragment : Fragment() {
         setText(R.id.text_result_imagelastupdate, modTime.toString())
         setText(R.id.text_result_imagename, solution.imageName)
         setText(R.id.text_result_fov_deg, "%.02f".format(solution.params.fovDeg))
-        setCoord(0.0, 0.0, R.id.text_corner00)
-        setCoord(0.0, solution.imageDimension.height.toDouble(), R.id.text_corner01)
-        setCoord(solution.imageDimension.width.toDouble(), 0.0, R.id.text_corner10)
-        setCoord(
-            solution.imageDimension.width.toDouble(),
-            solution.imageDimension.height.toDouble(),
-            R.id.text_corner11
-        )
     }
 }

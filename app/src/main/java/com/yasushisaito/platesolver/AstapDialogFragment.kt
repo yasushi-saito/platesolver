@@ -36,9 +36,7 @@ class AstapDialogFragment(
             if (searchOrigin == null) {
                 "Auto"
             } else {
-                "ra: %s\ndec: %s".format(
-                    rightAscensionToString(searchOrigin!!.ra),
-                    declinationToString(searchOrigin!!.dec))
+                searchOrigin!!.toDisplayString()
             }
         })
         messageWidget = dialogView.findViewById<TextView>(R.id.text_astap_message)
