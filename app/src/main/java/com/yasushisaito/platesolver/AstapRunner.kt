@@ -5,7 +5,6 @@ import android.util.Log
 import com.google.gson.Gson
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -57,7 +56,7 @@ class AstapRunner(
         onMessage("Running astap...")
         runAstap(solverParams)
         if (!wcsPath.exists()) {
-            onError("runastap: file $wcsPath does not exist")
+            onError("File $wcsPath does not exist")
             return
         }
         FileInputStream(wcsPath).use { wcsStream ->
@@ -67,7 +66,7 @@ class AstapRunner(
             // Typically the middle of the image
             val refPixel =
                 PixelCoordinate(wcs.getDouble(AstapResultReader.CRPIX1), wcs.getDouble(AstapResultReader.CRPIX2))
-            // The corresponding astrometric coordinate
+            // The corresponding celestial coordinate
             val refCel =
                 CelestialCoordinate(wcs.getDouble(AstapResultReader.CRVAL1), wcs.getDouble(AstapResultReader.CRVAL2))
             val dim =
@@ -84,11 +83,11 @@ class AstapRunner(
             var maxDec = -Double.MAX_VALUE
 
             val updateRange = fun(px: PixelCoordinate) {
-                val wcs = convertPixelToWcs(px, dim, refPixel, refCel, pixelToWcsMatrix)
-                if (minRa > wcs.ra) minRa = wcs.ra
-                if (maxRa < wcs.ra) maxRa = wcs.ra
-                if (minDec > wcs.dec) minDec = wcs.dec
-                if (maxDec < wcs.dec) maxDec = wcs.dec
+                val cel = convertPixelToCelestial(px, dim, refPixel, refCel, pixelToWcsMatrix)
+                if (minRa > cel.ra) minRa = cel.ra
+                if (maxRa < cel.ra) maxRa = cel.ra
+                if (minDec > cel.dec) minDec = cel.dec
+                if (maxDec < cel.dec) maxDec = cel.dec
             }
             updateRange(PixelCoordinate(0.0, 0.0))
             updateRange(PixelCoordinate(0.0, dim.height.toDouble()))
@@ -102,7 +101,7 @@ class AstapRunner(
             // findInRange will report stars outside the image rectangle. Remove them.
             for (m in allMatchedStars) {
                 val px =
-                    convertWcsToPixel(m.wcs, dim, refPixel, refCel, wcsToPixelMatrix)
+                    convertCelestialToPixel(m.cel, dim, refPixel, refCel, wcsToPixelMatrix)
                 if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
                 validMatchedStars.add(m)
             }
@@ -118,7 +117,7 @@ class AstapRunner(
                 matchedStars = validMatchedStars
             )
             val js = Gson().toJson(solution)
-            Log.d(TAG, "runastap: write result to $solutionJsonPath")
+            Log.d(TAG, "writing result to $solutionJsonPath")
             writeFileAtomic(solutionJsonPath, js.toByteArray())
         }
     }
@@ -133,25 +132,32 @@ class AstapRunner(
     fun abort() {
         procMu.withLock {
             aborted = true
-            proc?.let { it.destroy() }
+            proc?.destroy()
         }
     }
 
     private fun runAstap(solverParams: SolverParameters) {
         val imagePath = File(solverParams.imagePath)
-        val cmdline = arrayOf(
+        val cmdline = arrayListOf(
             getAstapCliPath(context).path,
             "-f", solverParams.imagePath,
             "-d", getStarDbDir(context).path,
             "-fov", solverParams.fovDeg.toString(),
-            "-ra", "18.05",
-            "-spd", "68"
+            //"-ra", "18.05",
+            //"-spd", "68"
         )
-        Log.d(TAG, "runastap: cmdline=${cmdline.contentToString()}")
+        if (solverParams.startSearch != null) {
+            cmdline.add("-ra")
+            cmdline.add("%f".format(solverParams.startSearch.ra))
+            cmdline.add("-spd")
+            cmdline.add("%f".format(solverParams.startSearch.dec + 90.0))
+        }
+        val cmdlineArray = cmdline.toTypedArray()
+        Log.d(TAG, "cmdline=${cmdlineArray.contentToString()}")
 
         procMu.withLock {
             if (aborted) return@runAstap
-            proc = Runtime.getRuntime().exec(cmdline, null, imagePath.parentFile)
+            proc = Runtime.getRuntime().exec(cmdlineArray, null, imagePath.parentFile)
         }
 
         val readOutputs = fun(stream: InputStream) {
@@ -172,7 +178,7 @@ class AstapRunner(
         readOutputs(proc!!.errorStream)
         val exitCode = proc!!.waitFor()
         if (exitCode != 0) {
-            Log.e(TAG, "runastap: exitcode=$exitCode")
+            Log.e(TAG, "exitCode=$exitCode")
         }
         procMu.withLock {
             proc = null

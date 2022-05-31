@@ -25,7 +25,7 @@ data class CelestialCoordinate(
 }
 
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
-fun rightAscensionToHMS(ra: Double): String {
+fun rightAscensionToString(ra: Double): String {
     val hour = (ra / 15.0).toInt()
     var remainder = ra  - hour * 15
     val min = (remainder * 4).toInt()
@@ -72,7 +72,7 @@ private val PIXEL_BIN_FACTOR = 57.5
 // gamma = sqrt(dRA * dRA + delta * delta)
 // ra = refCel.ra + atan(dRA / delta)
 // dec = atan( (sin(refCel.dec) + dDEC*cos(refCel.dec)) / gamma)
-fun convertPixelToWcs(
+fun convertPixelToCelestial(
     p: PixelCoordinate,
     imageDimension: AstapResultReader.ImageDimension,
     refPixel: PixelCoordinate,
@@ -114,11 +114,11 @@ fun convertPixelToWcs(
 // det=CD2_2*CD1_1-CD1_2*CD2_1
 // x = refPixel.x - (CD1_2*dDEC - CD2_2*dRA) / det
 // y = refPixel.y + (CD1_1*dDEC - CD2_1*dRA) / det
-fun convertWcsToPixel(wcs: CelestialCoordinate,
-                      imageDimension: AstapResultReader.ImageDimension,
-                      refPixel: PixelCoordinate,
-                      refCel: CelestialCoordinate,
-                      matrix: Matrix22): PixelCoordinate {
+fun convertCelestialToPixel(wcs: CelestialCoordinate,
+                            imageDimension: AstapResultReader.ImageDimension,
+                            refPixel: PixelCoordinate,
+                            refCel: CelestialCoordinate,
+                            matrix: Matrix22): PixelCoordinate {
     val h = sinDeg(wcs.dec)*sinDeg(refCel.dec) + cosDeg(wcs.dec)*cosDeg(refCel.dec)*cosDeg(wcs.ra-refCel.ra)
     val dRa = (cosDeg(wcs.dec)*sinDeg(wcs.ra-refCel.ra)) / h
     val dDec = (sinDeg(wcs.dec)*cosDeg(refCel.dec)-cosDeg(wcs.dec)*sinDeg(refCel.dec)*cosDeg(wcs.ra-refCel.ra)) / h

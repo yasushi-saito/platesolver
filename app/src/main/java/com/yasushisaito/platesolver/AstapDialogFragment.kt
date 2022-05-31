@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
@@ -14,6 +13,7 @@ import androidx.fragment.app.DialogFragment
 class AstapDialogFragment(
     val imageName: String,
     val fovDeg: Double,
+    val searchOrigin: CelestialCoordinate?,
     val onAbort: () -> Unit
 ) : DialogFragment() {
     // The TextView that shows status messages.
@@ -30,8 +30,17 @@ class AstapDialogFragment(
             requireActivity().layoutInflater.inflate(R.layout.fragment_astap_dialog, null)
         val abortButton = dialogView.findViewById<Button>(R.id.button_astap_abort)
         abortButton.setOnClickListener { view -> onAbort() }
-        dialogView.findViewById<TextView>(R.id.text_astap_imagename).setText(imageName)
+        dialogView.findViewById<TextView>(R.id.text_astap_image_name).setText(imageName)
         dialogView.findViewById<TextView>(R.id.text_astap_fov_deg).setText("%.2f".format(fovDeg))
+        dialogView.findViewById<TextView>(R.id.text_astap_search_origin).setText(run {
+            if (searchOrigin == null) {
+                "Auto"
+            } else {
+                "ra: %s\ndec: %s".format(
+                    rightAscensionToString(searchOrigin!!.ra),
+                    declinationToString(searchOrigin!!.dec))
+            }
+        })
         messageWidget = dialogView.findViewById<TextView>(R.id.text_astap_message)
         // Backfill the message in case set{Error,Message} was called before the view was created.
         lastMessage?.let { setMessage(it) }

@@ -55,29 +55,30 @@ data class Solution(
     val matchedStars: ArrayList<WellKnownDso>,
 ) {
     companion object {
-        const val CURRENT_VERSION = "20220527"
+        const val CURRENT_VERSION = "20220529"
     }
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 
     fun isValid(): Boolean {
         if (version != CURRENT_VERSION) return false
-        if (params == null) return false
         return true
     }
     // Convert pixel coordinate to WCS.
     fun pixelToWcs(p: PixelCoordinate): CelestialCoordinate {
-        return convertPixelToWcs(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
+        return convertPixelToCelestial(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
     }
 
     // Convert WCS to the pixel coordinate. Inverse of pixelToWcs.
     fun wcsToPixel(wcs: CelestialCoordinate): PixelCoordinate {
-        return convertWcsToPixel(wcs, imageDimension, refPixel, refWcs, wcsToPixelMatrix)
+        return convertCelestialToPixel(wcs, imageDimension, refPixel, refWcs, wcsToPixelMatrix)
     }
 }
 
 // Try read a solution json file.
 fun readSolution(jsonPath: File): Solution {
-    return FileReader(jsonPath).use { stream ->
-        return Gson().fromJson(stream, Solution::class.java)
+    val solution: Solution = FileReader(jsonPath).use { stream ->
+        Gson().fromJson(stream, Solution::class.java)
     }
+    if (!solution.isValid()) throw Exception("invalid solution")
+    return solution
 }

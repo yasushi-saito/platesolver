@@ -43,7 +43,7 @@ class ResultFragment : Fragment() {
 
         val setCoord = fun(px: Double, py: Double, viewId: Int) {
             val wcsCoord = solution.pixelToWcs(PixelCoordinate(px, py))
-            setText(viewId, "ra:%s dec:%s".format(rightAscensionToHMS(wcsCoord.ra), declinationToString(wcsCoord.dec)))
+            setText(viewId, "ra:%s dec:%s".format(rightAscensionToString(wcsCoord.ra), declinationToString(wcsCoord.dec)))
         }
         setText(
             R.id.text_result_imagedimension,

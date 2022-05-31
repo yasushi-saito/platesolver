@@ -25,13 +25,13 @@ RA[0..864000], DEC[-324000..324000], name(s), length [0.1 min], width[0.1 min], 
             val ds = WellKnownDsoSet(stream)
             var v0 = ds.findByName("NP_2020")
             assertNotNull(v0)
-            assertEquals(863691.0*360/864000, v0!!.wcs.ra, 1e-6)
-            assertEquals(323599.0*90/324000, v0.wcs.dec, 1e-6)
+            assertEquals(863691.0*360/864000, v0!!.cel.ra, 1e-6)
+            assertEquals(323599.0*90/324000, v0.cel.dec, 1e-6)
 
             v0 = ds.findByName("α_CMa")
             assertNotNull(v0)
-            assertEquals(243089.0*360/864000, v0!!.wcs.ra, 1e-6)
-            assertEquals(-60178.0*90/324000, v0.wcs.dec, 1e-6)
+            assertEquals(243089.0*360/864000, v0!!.cel.ra, 1e-6)
+            assertEquals(-60178.0*90/324000, v0.cel.dec, 1e-6)
             assertEquals(v0, ds.findByName("Sirius"))
         }
 

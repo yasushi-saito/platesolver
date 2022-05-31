@@ -39,13 +39,13 @@ private fun isValidFovDeg(fovDeg: Double): Boolean {
 }
 
 private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
-    edit.setOnEditorActionListener { v, actionId, event ->
+    edit.setOnEditorActionListener { _, actionId, event ->
         if (actionId == 0) cb(edit)
         false
     }
-    edit.setOnFocusChangeListener({ v, hasFocus ->
+    edit.setOnFocusChangeListener { v, hasFocus ->
         if (!hasFocus) cb(edit)
-    })
+    }
 }
 
 
@@ -63,8 +63,10 @@ class SetupFragment : Fragment() {
         const val EVENT_WELLKNOWNDSO_LOADED = 6
     }
 
-    private var fovDeg: Double = DEFAULT_FOV_DEG
+    // Setup parameters
     private var imageUri: Uri? = null
+    private var fovDeg: Double = DEFAULT_FOV_DEG
+    private var startSearch: WellKnownDso? = null
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
         val launch =
@@ -134,21 +136,21 @@ class SetupFragment : Fragment() {
             updateView()
         }
         val pickFileButton = view.findViewById<Button>(R.id.setup_pick_file)
-        pickFileButton.setOnClickListener({ view ->
+        pickFileButton.setOnClickListener({
             val intent = Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
             pickFileLauncher.launch(intent)
         })
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setOnClickListener({ view ->
+        runButton.setOnClickListener({
             onRunAstap()
         })
         updateView()
     }
 
     // List of DSO names extracted from WellKnownDsoSet.
-    private var wellKnownDsoArray: ArrayAdapter<String>? = null;
+    private var wellKnownDsoArray: ArrayAdapter<String>? = null
     // Maps DSO names in the above -> WellKnownDso objects
     private val wellKnownDsoNameMap = HashMap<String, WellKnownDso>()
 
@@ -176,19 +178,20 @@ class SetupFragment : Fragment() {
             dsoView.setAdapter(wellKnownDsoArray)
             dsoView.setDropDownWidth(400)
             setOnChangeListener(dsoView) {
-                val value = dsoView.getText().toString()
-                if (!wellKnownDsoNameMap.containsKey(value)) {
-                    dsoView.setText("")
-                    return@setOnChangeListener
-                }
-                val dso = wellKnownDsoNameMap[value] as WellKnownDso
-                Log.d(TAG, "dsoview selected $dso")
-
+                startSearch = wellKnownDsoNameMap.get(dsoView.getText().toString())
+                Log.d(TAG, "dsoview selected $startSearch")
                 val raDecView = view.findViewById<TextView>(R.id.text_setup_searchstart_ra_dec)
-                raDecView.setText("ra: %s\ndec: %s".format(
-                    rightAscensionToHMS(dso.wcs.ra),
-                    declinationToString(dso.wcs.dec),
-                ))
+                if (startSearch == null) {
+                    dsoView.setText("")
+                    raDecView.setText("Auto")
+                } else {
+                    raDecView.setText(
+                        "ra: %s\ndec: %s".format(
+                            rightAscensionToString(startSearch!!.cel.ra),
+                            declinationToString(startSearch!!.cel.dec),
+                        )
+                    )
+                }
             }
         }
 
@@ -254,35 +257,38 @@ class SetupFragment : Fragment() {
         val activity = requireActivity()
         val astapRunnerMu = ReentrantLock()
         var astapRunner: AstapRunner? = null
+
+        val thisImageUri = imageUri!!
+        val thisFovDeg = fovDeg
+        val thisStartSearchDso = startSearch
+
         dialog = AstapDialogFragment(
             onAbort= {
                 astapRunnerMu.withLock {
                     astapRunner?.abort()
                 }
             },
-            fovDeg = fovDeg,
-            imageName= getUriFilename(activity.contentResolver, imageUri!!))
+            fovDeg = thisFovDeg,
+            imageName= getUriFilename(activity.contentResolver, thisImageUri),
+            searchOrigin = thisStartSearchDso?.cel
+        )
         Thread(Runnable {
-                val activity = requireActivity()
                 val resolver = activity.contentResolver
-                val ext = getUriMimeType(resolver, imageUri!!)
-                val inputStream = resolver.openInputStream(imageUri!!)
+                val ext = getUriMimeType(resolver, thisImageUri)
+                val inputStream = resolver.openInputStream(thisImageUri)
                 if (inputStream == null) {
-                    Log.e(TAG, "could not open $imageUri")
+                    Log.e(TAG, "could not open $thisImageUri")
                     return@Runnable
                 }
                 val sha256 = inputStream.use {
                     inputStreamDigest(inputStream)
                 }
                 val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
-                val solverParams = SolverParameters(imagePath.absolutePath, fovDeg)
+                val solverParams = SolverParameters(imagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
                 val solutionJsonPath = File(getSolutionDir(activity), "${solverParams.hashString()}.json")
                 var solution: Solution? = null
                 try {
                     solution = readSolution(solutionJsonPath)
-                    if (!solution.isValid()) {
-                        solution = null
-                    }
                 } catch (e: Exception) {
                     Log.d(TAG,"readSolution: could not read cached solution in solutionJsonPath: $e: Running astap")
                 }
@@ -305,12 +311,12 @@ class SetupFragment : Fragment() {
                             },
                             solutionJsonPath = solutionJsonPath,
                             solverParams = solverParams,
-                            imageName = getUriFilename(requireContext().contentResolver, imageUri!!)
+                            imageName = getUriFilename(requireContext().contentResolver, thisImageUri)
                         )
                     }
                     sendMessage(EVENT_SHOW_DIALOG, "" as Any)
                     if (!imagePath.exists()) {
-                        copyUriTo(activity.contentResolver, imageUri!!, imagePath)
+                        copyUriTo(activity.contentResolver, thisImageUri, imagePath)
                         sendMessage(EVENT_MESSAGE, "copied file" as Any)
                     } else {
                         sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Any)

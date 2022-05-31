@@ -4,7 +4,6 @@ import android.content.res.AssetManager
 import android.util.Log
 import java.io.*
 import java.util.concurrent.locks.ReentrantLock
-import java.util.regex.Pattern
 import kotlin.concurrent.withLock
 
 const val TAG = "WellKnownDso"
@@ -14,7 +13,7 @@ data class WellKnownDso(
     // Gxy, OC, etc.
     // See page 19 of https://ngcicproject.observers.org/public_HCNGC/The_HCNGC_intro.pdf
     val typ: String,
-    val wcs: CelestialCoordinate,
+    val cel: CelestialCoordinate,
     // Visible magnitude
     val mag: Double,
     // List of names. An DSO may have multiple names, e.g., "M42", "NGC1976", "Orion nebula".
@@ -23,7 +22,7 @@ data class WellKnownDso(
 ) : Serializable {
     override fun toString(): String {
         val namesString = names.joinToString("/")
-        return "DeepSkyEntry(wcs=$wcs names=$namesString)"
+        return "DeepSkyEntry(wcs=$cel names=$namesString)"
     }
 }
 
@@ -114,8 +113,8 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
         val hits = ArrayList<WellKnownDso>()
         var n = 0
         for (ent in entries) {
-            if (ent.wcs.ra in minRa..maxRa &&
-                ent.wcs.dec in minDec..maxDec
+            if (ent.cel.ra in minRa..maxRa &&
+                ent.cel.dec in minDec..maxDec
             ) {
                 hits.add(ent)
                 n++
@@ -178,7 +177,7 @@ private fun parseCsv(stream: InputStream): WellKnownDsoSet {
         entries.add(
             WellKnownDso(
                 typ = typ,
-                wcs = CelestialCoordinate(ra, dec),
+                cel = CelestialCoordinate(ra, dec),
                 mag = mag,
                 names = names
             )

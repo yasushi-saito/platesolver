@@ -4,7 +4,13 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.security.MessageDigest
 
-data class SolverParameters(val imagePath: String, val fovDeg: Double) {
+data class SolverParameters(
+    // The image pathname in the local file system.
+    val imagePath: String,
+    // Assumed field of view of the whole image, in degrees.
+    val fovDeg: Double,
+    // The (ra, dec) to start searching from.
+    val startSearch: CelestialCoordinate?) {
     fun hashString(): String {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.reset()
@@ -13,6 +19,10 @@ data class SolverParameters(val imagePath: String, val fovDeg: Double) {
         val dos = DataOutputStream(bos)
         dos.writeChars(imagePath)
         dos.writeDouble(fovDeg)
+        if (startSearch != null) {
+            dos.writeDouble(startSearch.ra)
+            dos.writeDouble(startSearch.dec)
+        }
         dos.flush()
         digest.update(bos.toByteArray())
         val hash = digest.digest()
