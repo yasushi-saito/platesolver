@@ -221,12 +221,24 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private lateinit var imageBitmap: Bitmap
     private lateinit var imageBitmapRect: Rect
 
+    // Fraction of solution.matchedStars that are shown.
+    // Darker objects will be hidden with small fraction values.
+    // Value is in range [0, 1]
+    private var matchedStarsDisplayFraction = 1.0
+
     fun setSolution(s: Solution) {
         solution = s
         imageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
         imageBitmapRect = Rect(0, 0, imageBitmap.width, imageBitmap.height)
     }
 
+    fun setMatchedStarsDisplayFraction(fraction: Double) {
+        assert(fraction >= 0.0 && fraction <= 1.0, { Log.e(TAG, "Bad fraction $fraction") })
+        if (fraction != matchedStarsDisplayFraction) {
+            matchedStarsDisplayFraction = fraction
+            invalidate()
+        }
+    }
     private fun pixelCoordToCanvasCoord(p: PixelCoordinate): CanvasCoordinate {
         return CanvasCoordinate(
             p.x / solution.imageDimension.width * width,
@@ -265,7 +277,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         )
 
         paint.color = Color.parseColor("#00e0e0")
-        for (i in 0 until solution.matchedStars.size) {
+        val nStarsToShow = Math.ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
+        for (i in 0 until nStarsToShow) {
             val e = solution.matchedStars[i]
             val placement = labelPlacements[i]
 

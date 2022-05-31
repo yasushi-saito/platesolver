@@ -8,6 +8,10 @@ import kotlin.concurrent.withLock
 
 const val TAG = "WellKnownDso"
 
+
+// Max number of DSOs to return in findInRange.
+const val MAX_HITS = 100
+
 // Represents a well known deep sky object.
 data class WellKnownDso(
     // Gxy, OC, etc.
@@ -108,17 +112,18 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
         minRa: Double,
         minDec: Double,
         maxRa: Double,
-        maxDec: Double
+        maxDec: Double,
     ): ArrayList<WellKnownDso> {
         val hits = ArrayList<WellKnownDso>()
         var n = 0
+        // Visit entries in magnitude order (brightest first).
         for (ent in entries) {
             if (ent.cel.ra in minRa..maxRa &&
                 ent.cel.dec in minDec..maxDec
             ) {
                 hits.add(ent)
                 n++
-                if (n > 100) break
+                if (n > MAX_HITS) break
             }
         }
         return hits
@@ -192,7 +197,8 @@ private fun parseCsv(stream: InputStream): WellKnownDsoSet {
             1
         } else if (a.typ != b.typ) {
             if (a.typ == "Star") 1
-            else -1
+            else if (b.typ == "Star") -1
+            else 0
         } else {
             0
         }

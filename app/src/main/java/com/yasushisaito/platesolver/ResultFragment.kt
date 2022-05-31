@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
@@ -48,5 +49,15 @@ class ResultFragment : Fragment() {
         setText(R.id.text_result_imagelastupdate, modTime.toString())
         setText(R.id.text_result_imagename, solution.imageName)
         setText(R.id.text_result_fov_deg, "%.02f".format(solution.params.fovDeg))
+
+        class SeekBarListener: SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                annotatedImageView.setMatchedStarsDisplayFraction(progress.toDouble() / 100.0)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        }
+        var seekbar = view.findViewById<SeekBar>(R.id.seekbar_result_matchedstars)
+        seekbar.setOnSeekBarChangeListener(SeekBarListener())
     }
 }

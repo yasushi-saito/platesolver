@@ -111,7 +111,7 @@ def read_dso_csv() -> List[DeepSkyObject]:
 
             mag_str = line["mag"]
             if not mag_str:
-                mag = MAX_MAGNITUDE
+                mag = 4 # pick an arbitrary value
             else:
                 mag = float(mag_str)
                 if mag > MAX_MAGNITUDE:

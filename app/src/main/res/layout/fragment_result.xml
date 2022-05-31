@@ -128,10 +128,11 @@
         app:layout_constraintEnd_toStartOf="@+id/guideline_left" />
 
     <SeekBar
-        android:id="@+id/seekbar_matchedstars"
+        android:id="@+id/seekbar_result_matchedstars"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:progress="100"
         app:layout_constraintEnd_toStartOf="@+id/textView7"
         app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@+id/textView6"
@@ -143,7 +144,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:text="Fewer"
-        app:layout_constraintBottom_toBottomOf="@+id/seekbar_matchedstars"
+        app:layout_constraintBottom_toBottomOf="@+id/seekbar_result_matchedstars"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0" />
 
     <com.yasushisaito.platesolver.AnnotatedImageView
@@ -155,7 +156,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/seekbar_matchedstars"
+        app:layout_constraintTop_toBottomOf="@+id/seekbar_result_matchedstars"
         app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
