@@ -101,12 +101,11 @@
         android:id="@+id/button_astap_abort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="48dp"
+        android:layout_marginStart="72dp"
+        android:layout_marginTop="64dp"
         android:text="Abort"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progress_astap_dialog" />
+        app:layout_constraintStart_toStartOf="@+id/guideline6"
+        app:layout_constraintTop_toBottomOf="@+id/text_astap_message" />
 
     <ProgressBar
         android:id="@+id/progress_astap_dialog"
@@ -136,4 +135,17 @@
         app:layout_constraintEnd_toStartOf="@+id/guideline7"
         app:layout_constraintStart_toStartOf="@+id/guideline6"
         app:layout_constraintTop_toBottomOf="@+id/textView5" />
+
+    <Button
+        android:id="@+id/button_astap_close"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="72dp"
+        android:text="Close"
+        app:layout_constraintBottom_toBottomOf="@+id/button_astap_abort"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline7"
+        app:layout_constraintStart_toEndOf="@+id/button_astap_abort"
+        app:layout_constraintTop_toTopOf="@+id/button_astap_abort" />
 </androidx.constraintlayout.widget.ConstraintLayout>

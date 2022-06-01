@@ -4,7 +4,9 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 
@@ -21,11 +23,23 @@ class AstapDialogFragment(
     private var lastMessage: String? = null
     private var lastError: String? = null
 
+    private lateinit var abortButton: Button
+    private lateinit var closeButton: Button
+    private lateinit var progressBar: ProgressBar
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialogView =
             requireActivity().layoutInflater.inflate(R.layout.fragment_astap_dialog, null)
-        val abortButton = dialogView.findViewById<Button>(R.id.button_astap_abort)
+        progressBar = dialogView.findViewById(R.id.progress_astap_dialog)
+
+        abortButton = dialogView.findViewById(R.id.button_astap_abort)
         abortButton.setOnClickListener { onAbort() }
+        abortButton.isEnabled = true
+
+        closeButton = dialogView.findViewById(R.id.button_astap_close)
+        closeButton.setOnClickListener { dismiss() }
+        closeButton.isEnabled = false
+
         dialogView.findViewById<TextView>(R.id.text_astap_dialog_image_name).text = imageName
         dialogView.findViewById<TextView>(R.id.text_astap_dialog_fov_deg).text =
             "%.2f".format(fovDeg)
@@ -57,5 +71,11 @@ class AstapDialogFragment(
             it.setTextColor(Color.RED)
         }
         lastError = message
+    }
+
+    fun suspend() {
+        abortButton.isEnabled = false
+        closeButton.isEnabled = true
+        progressBar.visibility = View.GONE
     }
 }

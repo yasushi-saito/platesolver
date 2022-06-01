@@ -56,11 +56,11 @@ class RunAstapFragment : Fragment() {
         const val BUNDLE_KEY_FOV_DEG = "fovDeg"
 
         const val EVENT_MESSAGE = 0
-        const val EVENT_ERROR = 2
+        const val EVENT_ERROR_MESSAGE = 2
         const val EVENT_SHOW_SOLUTION = 3
         const val EVENT_SHOW_DIALOG = 4
-        const val EVENT_DISMISS_DIALOG = 5
         const val EVENT_WELLKNOWNDSO_LOADED = 6
+        const val EVENT_SUSPEND_DIALOG = 7
     }
 
     // Setup parameters
@@ -223,7 +223,7 @@ class RunAstapFragment : Fragment() {
             EVENT_MESSAGE -> {
                 dialog?.setMessage(msg.obj as String)
             }
-            EVENT_ERROR -> {
+            EVENT_ERROR_MESSAGE -> {
                 dialog?.setError(msg.obj as String)
             }
             EVENT_SHOW_SOLUTION -> {
@@ -237,11 +237,10 @@ class RunAstapFragment : Fragment() {
             EVENT_SHOW_DIALOG -> {
                 dialog?.show(childFragmentManager, null)
             }
-            EVENT_DISMISS_DIALOG -> {
-                dialog?.dismiss()
-                dialog = null
+            EVENT_SUSPEND_DIALOG -> {
+                dialog?.suspend()
             }
-            else -> throw Error("Invalid message $msg")
+            else -> throw Exception("Invalid message $msg")
         }
         true
     }
@@ -254,7 +253,7 @@ class RunAstapFragment : Fragment() {
 
     private fun onRunAstap() {
         if (!isValidFovDeg(fovDeg) || imageUri == null) {
-            throw Error("invalid args")
+            throw Exception("invalid args")
         }
 
         val activity = requireActivity()
@@ -291,23 +290,23 @@ class RunAstapFragment : Fragment() {
                 SolverParameters(imagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
             val solutionJsonPath =
                 File(getSolutionDir(activity), "${solverParams.hashString()}.json")
-            var solution: Solution? = null
-            try {
-                solution = readSolution(solutionJsonPath)
-            } catch (e: Exception) {
-                Log.d(
-                    TAG,
-                    "readSolution: could not read cached solution in solutionJsonPath: $e: Running astap"
-                )
-            }
 
-            if (solution == null) {
+            // Try reading the json file. Note that readSolution will raise exception on any error
+            try {
+                readSolution(solutionJsonPath)
+                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
+                return@Runnable
+            } catch (ex: Exception) {
+                Log.d(TAG, "Could not read $solutionJsonPath: $ex; Running astap")
+            }
+            try {
+                // The solution json doesn't exist yet. Run astap_cli.
                 astapRunnerMu.withLock {
                     astapRunner = AstapRunner(
                         context = requireContext(),
                         onError = { message: String ->
                             sendMessage(
-                                EVENT_ERROR,
+                                EVENT_ERROR_MESSAGE,
                                 message as Any
                             )
                         },
@@ -330,12 +329,15 @@ class RunAstapFragment : Fragment() {
                     sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Any)
                 }
                 astapRunner!!.run()
-                sendMessage(EVENT_DISMISS_DIALOG, "" as Any)
+                if (!solutionJsonPath.exists()) {
+                    sendMessage(EVENT_ERROR_MESSAGE, "could not build solution")
+                    throw Exception("could not build solution")
+                }
+            } catch (ex: Exception) {
+                Log.d(TAG, "Could not run astap_cli: $ex")
+            } finally {
+                sendMessage(EVENT_SUSPEND_DIALOG, "")
             }
-            if (!solutionJsonPath.exists()) {
-                throw Error("could not build solution")
-            }
-            sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
         }).start()
     }
 
