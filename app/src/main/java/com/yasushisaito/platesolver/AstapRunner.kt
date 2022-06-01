@@ -69,8 +69,7 @@ class AstapRunner(
             // The corresponding celestial coordinate
             val refCel =
                 CelestialCoordinate(wcs.getDouble(AstapResultReader.CRVAL1), wcs.getDouble(AstapResultReader.CRVAL2))
-            val dim =
-                AstapResultReader.ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
+            val dim = ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
             val pixelToWcsMatrix = Matrix22(
                 wcs.getDouble(AstapResultReader.CD1_1), wcs.getDouble(AstapResultReader.CD1_2),
                 wcs.getDouble(AstapResultReader.CD2_1), wcs.getDouble(AstapResultReader.CD2_2)

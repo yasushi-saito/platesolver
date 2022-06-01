@@ -83,16 +83,30 @@ private class ConflictDetector {
     }
 }
 
-data class CanvasDimension(val width: Float, val height: Float)
-
 private fun pixelCoordToCanvasCoord(
     p: PixelCoordinate,
-    imageDim: AstapResultReader.ImageDimension,
+    imageDim: ImageDimension,
     canvasDim: CanvasDimension,
 ): CanvasCoordinate {
+    // Preserve the aspect ratio of the original image.
+    val imageAspectRatio = imageDim.width / imageDim.height
+    val canvasAspectRatio = canvasDim.width / canvasDim.height
+
+    // Size of the subpart of the canvas that's used to draw the bitmap
+    val canvasImageWidth: Float
+    val canvasImageHeight: Float
+    if (imageAspectRatio > canvasAspectRatio) {
+        // If the image is horizontally oblong
+        canvasImageWidth = canvasDim.width.toFloat()
+        canvasImageHeight = canvasDim.width.toFloat() / imageAspectRatio
+    } else {
+        // If the image is vertically oblong
+        canvasImageHeight = canvasDim.height.toFloat()
+        canvasImageWidth = canvasDim.height.toFloat() * imageAspectRatio
+    }
     return CanvasCoordinate(
-        p.x / imageDim.width * canvasDim.width,
-        p.y / imageDim.height * canvasDim.height
+        p.x / imageDim.width * canvasImageWidth,
+        p.y / imageDim.height * canvasImageHeight
     )
 }
 
@@ -114,7 +128,7 @@ private data class LabelPlacement(
 private fun placeDsoLabels(
     solution: Solution,
     paint: Paint,
-    imageDim: AstapResultReader.ImageDimension,
+    imageDim: ImageDimension,
     canvasDim: CanvasDimension,
     scaleFactor: Float
 ): ArrayList<LabelPlacement> {
@@ -219,7 +233,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     private lateinit var solution: Solution
     private lateinit var imageBitmap: Bitmap
-    private lateinit var imageBitmapRect: Rect
 
     // Fraction of solution.matchedStars that are shown.
     // Darker objects will be hidden with small fraction values.
@@ -229,7 +242,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     fun setSolution(s: Solution) {
         solution = s
         imageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
-        imageBitmapRect = Rect(0, 0, imageBitmap.width, imageBitmap.height)
     }
 
     fun setMatchedStarsDisplayFraction(fraction: Double) {
@@ -239,25 +251,28 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             invalidate()
         }
     }
-    private fun pixelCoordToCanvasCoord(p: PixelCoordinate): CanvasCoordinate {
-        return CanvasCoordinate(
-            p.x / solution.imageDimension.width * width,
-            p.y / solution.imageDimension.height * height
-        )
-    }
 
+    /*
+        private fun pixelCoordToCanvasCoord(p: PixelCoordinate): CanvasCoordinate {
+            return CanvasCoordinate(
+                p.x / solution.imageDimension.width * width,
+                p.y / solution.imageDimension.height * height
+            )
+        }
+    */
+    @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.save() // save() and restore() are used to reset canvas data after each draw
-
         // Set the canvas origin to the center of the screen only on the first time onDraw is called
         //  (otherwise it'll break the panning code)
         paint.textSize = 32f / scaleFactor
 
+        val canvasDim = CanvasDimension(width, height)
         if (labelPlacements.isEmpty()) { // The first call, or the scaleFactor changed.
             labelPlacements = placeDsoLabels(
                 solution = solution,
-                canvasDim = CanvasDimension(width.toFloat(), height.toFloat()),
+                canvasDim = canvasDim,
                 imageDim = solution.imageDimension,
                 paint = paint,
                 scaleFactor = scaleFactor
@@ -269,15 +284,25 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         // Just draw a bunch of circles (this is for testing panning and zooming
         canvas.translate(canvasX, canvasY)
 
+        // Preserve the aspect ratio of the original image.
+        val canvasImageRect = pixelCoordToCanvasCoord(
+            PixelCoordinate(
+                solution.imageDimension.width.toDouble(),
+                solution.imageDimension.height.toDouble()
+            ),
+            solution.imageDimension,
+            canvasDim
+        )
         canvas.drawBitmap(
             imageBitmap,
-            imageBitmapRect,
-            RectF(0f, 0f, width.toFloat(), height.toFloat()),
+            Rect(0, 0, solution.imageDimension.width, solution.imageDimension.height),
+            RectF(0f, 0f, canvasImageRect.x.toFloat(), canvasImageRect.y.toFloat()),
             paint
         )
 
         paint.color = Color.parseColor("#00e0e0")
-        val nStarsToShow = Math.ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
+        val nStarsToShow =
+            Math.ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
         for (i in 0 until nStarsToShow) {
             val e = solution.matchedStars[i]
             val placement = labelPlacements[i]
@@ -316,7 +341,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             PixelCoordinate(0.0, 0.0),
             -20f, -20f,
             solution,
-            CanvasDimension(width.toFloat(), height.toFloat()),
+            canvasDim,
             scaleFactor,
             paint,
             canvas,
@@ -325,7 +350,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             PixelCoordinate(solution.imageDimension.width.toDouble(), 0.0),
             20f, -20f,
             solution,
-            CanvasDimension(width.toFloat(), height.toFloat()),
+            canvasDim,
             scaleFactor,
             paint,
             canvas,
@@ -334,7 +359,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             PixelCoordinate(0.0, solution.imageDimension.height.toDouble()),
             -20f, 20f,
             solution,
-            CanvasDimension(width.toFloat(), height.toFloat()),
+            canvasDim,
             scaleFactor,
             paint,
             canvas,
@@ -342,10 +367,11 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         drawCelestialCoordinate(
             PixelCoordinate(
                 solution.imageDimension.width.toDouble(),
-                solution.imageDimension.height.toDouble()),
+                solution.imageDimension.height.toDouble()
+            ),
             20f, 20f,
             solution,
-            CanvasDimension(width.toFloat(), height.toFloat()),
+            canvasDim,
             scaleFactor,
             paint,
             canvas,
@@ -372,25 +398,31 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             paint.getTextBounds(text, 0, text.length, thisRect)
             textWidth = Integer.max(textWidth, thisRect.right - thisRect.left)
         }
-        val textHeight = (texts.size-1) * paint.textSize
+        val textHeight = (texts.size - 1) * paint.textSize
 
         val offX = if (baseX >= 0) 0.0 else textWidth.toDouble()
         val offY = if (baseY >= 0) -textHeight.toDouble() else 0.0
-        val cx = pixelCoordToCanvasCoord(px)
+        val cx =
+            pixelCoordToCanvasCoord(px, imageDim = solution.imageDimension, canvasDim = canvasDim)
 
         var y = cx.y + baseY - offY
         for (text in texts) {
-            canvas.drawText(text,
+            canvas.drawText(
+                text,
                 (cx.x + baseX - offX).toFloat(),
                 y.toFloat(),
-                paint)
+                paint
+            )
             y += paint.textSize
         }
-        canvas.drawLine(cx.x.toFloat(), cx.y.toFloat(),
+        canvas.drawLine(
+            cx.x.toFloat(), cx.y.toFloat(),
             (cx.x + baseX).toFloat(),
             (cx.y + baseY).toFloat(),
-            paint)
+            paint
+        )
     }
+
     // performClick isn't being overridden (should be for accessibility purposes), but it doesn't
     //  really matter here.
     @SuppressLint("ClickableViewAccessibility")

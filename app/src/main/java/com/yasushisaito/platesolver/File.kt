@@ -42,7 +42,6 @@ fun isStardbInstalled(context: Context, dbName: String): Boolean {
     try {
         var readyPath = getStarDbReadyPath(context, dbName)
         val data = String(readyPath.readBytes())
-        return false
         return (data == "ready")
     } catch (ex: Exception) {
         Log.d(TAG, "isStardbExpanded: exception $ex")

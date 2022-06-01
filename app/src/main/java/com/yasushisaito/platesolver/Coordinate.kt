@@ -30,6 +30,12 @@ data class CelestialCoordinate(
     }
 }
 
+// Size of an image
+data class ImageDimension(val width: Int, val height: Int)
+
+// Size of a view
+data class CanvasDimension(val width: Int, val height: Int)
+
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
 fun rightAscensionToString(ra: Double): String {
     val hour = (ra / 15.0).toInt()
@@ -81,7 +87,7 @@ private val PIXEL_BIN_FACTOR = 180 / Math.PI // ??
 // dec = atan( (sin(refCel.dec) + dDEC*cos(refCel.dec)) / gamma)
 fun convertPixelToCelestial(
     p: PixelCoordinate,
-    imageDimension: AstapResultReader.ImageDimension,
+    imageDimension: ImageDimension,
     refPixel: PixelCoordinate,
     refCel: CelestialCoordinate,
     matrix: Matrix22): CelestialCoordinate {
@@ -122,7 +128,7 @@ fun convertPixelToCelestial(
 // x = refPixel.x - (CD1_2*dDEC - CD2_2*dRA) / det
 // y = refPixel.y + (CD1_1*dDEC - CD2_1*dRA) / det
 fun convertCelestialToPixel(wcs: CelestialCoordinate,
-                            imageDimension: AstapResultReader.ImageDimension,
+                            imageDimension: ImageDimension,
                             refPixel: PixelCoordinate,
                             refCel: CelestialCoordinate,
                             matrix: Matrix22): PixelCoordinate {

@@ -22,7 +22,6 @@ class AstapResultReader(stream: InputStream) {
     }
 
     // Denotes the image dimension (pixel width, pixel height).
-    data class ImageDimension(val width: Int, val height: Int)
     data class BoolKey(val key: String, val value: Boolean)
     data class FloatKey(val key: String, val value: Double)
     data class StringKey(val key: String, val value: String)
