@@ -12,27 +12,29 @@
         android:id="@+id/text_setup_searchstart_ra_dec"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:maxLines="2"
         android:minLines="2"
         android:text="Auto"
-        app:layout_constraintBottom_toBottomOf="@+id/autocomplete_astap_searchstart"
-        app:layout_constraintStart_toStartOf="@+id/guideline5" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/autocomplete_astap_searchstart"
+        app:layout_constraintStart_toEndOf="@+id/autocomplete_astap_searchstart" />
 
     <Button
         android:id="@+id/astap_pick_file"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="64dp"
         android:text="Pick File"
-        app:layout_constraintStart_toStartOf="@+id/guideline3"
-        tools:layout_editor_absoluteY="61dp" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_begin="32dp" />
+        app:layout_constraintGuide_begin="16dp" />
 
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/barrier2"
@@ -46,7 +48,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_end="340dp" />
+        app:layout_constraintGuide_end="283dp" />
 
     <TextView
         android:id="@+id/textView2"
@@ -58,21 +60,19 @@
 
     <EditText
         android:id="@+id/text_astap_fov_lens"
-        android:layout_width="100dp"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
         android:digits="0123456789."
         android:ems="10"
         android:imeOptions="actionNext"
         android:inputType="number"
-        app:layout_constraintStart_toStartOf="@+id/guideline4"
-        app:layout_constraintTop_toBottomOf="@+id/label_setup_fov" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/label_setup_fov"
+        app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
     <TextView
         android:id="@+id/label_setup_fov"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
         android:layout_marginTop="16dp"
         android:text="Field of view"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
@@ -80,7 +80,7 @@
 
     <EditText
         android:id="@+id/text_astap_fov_deg"
-        android:layout_width="100dp"
+        android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:digits="0123456789."
@@ -112,9 +112,10 @@
         android:id="@+id/text_setup_imagename"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
         android:text="imagename"
         app:layout_constraintBaseline_toBaselineOf="@+id/astap_pick_file"
-        app:layout_constraintStart_toStartOf="@+id/guideline5" />
+        app:layout_constraintStart_toEndOf="@+id/astap_pick_file" />
 
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/barrier3"
@@ -123,28 +124,19 @@
         app:barrierDirection="left"
         app:constraint_referenced_ids="fragment_setup" />
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline5"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_begin="188dp" />
-
     <AutoCompleteTextView
         android:id="@+id/autocomplete_astap_searchstart"
-        android:layout_width="100dp"
+        android:layout_width="120dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         android:imeOptions="actionNext"
         android:inputType="text"
-        app:layout_constraintStart_toStartOf="@+id/guideline4"
-        app:layout_constraintTop_toBottomOf="@+id/textView8" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/textView8"
+        app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
     <TextView
         android:id="@+id/textView8"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
         android:layout_marginTop="16dp"
         android:text="Search start"
         app:layout_constraintStart_toStartOf="@+id/guideline3"

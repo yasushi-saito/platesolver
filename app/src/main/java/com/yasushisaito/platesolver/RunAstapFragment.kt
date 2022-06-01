@@ -109,12 +109,22 @@ class RunAstapFragment : Fragment() {
         thisView = null
     }
 
+    private lateinit var fovDegEdit: EditText
+    private lateinit var fovLensEdit: EditText
+    private lateinit var runButton: Button
+    private lateinit var searchStartEdit: AutoCompleteTextView
+    private lateinit var searchStartRaDecView: TextView
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
+        fovDegEdit = view.findViewById(R.id.text_astap_fov_deg)
+        fovLensEdit = view.findViewById(R.id.text_astap_fov_lens)
+        searchStartEdit = view.findViewById(R.id.autocomplete_astap_searchstart)
+        searchStartRaDecView = view.findViewById(R.id.text_setup_searchstart_ra_dec)
 
         // Handle FOV degree changes
-        setOnChangeListener(view.findViewById(R.id.text_astap_fov_deg)) { edit ->
+        setOnChangeListener(fovDegEdit) { edit ->
             var deg = 0.0
             try {
                 deg = edit.text.toString().toDouble()
@@ -126,7 +136,7 @@ class RunAstapFragment : Fragment() {
             updateView()
         }
         // Handle FOV lens focal length changes
-        setOnChangeListener(view.findViewById(R.id.text_astap_fov_lens)) { edit ->
+        setOnChangeListener(fovLensEdit) { edit ->
             var mm = 0.0
             try {
                 mm = edit.text.toString().toDouble()
@@ -147,7 +157,7 @@ class RunAstapFragment : Fragment() {
                 .setAction(Intent.ACTION_GET_CONTENT)
             pickFileLauncher.launch(intent)
         }
-        val runButton = view.findViewById<Button>(R.id.setup_run)
+        runButton = view.findViewById(R.id.setup_run)
         runButton.setOnClickListener {
             onRunAstap()
         }
@@ -181,34 +191,37 @@ class RunAstapFragment : Fragment() {
                 android.R.layout.simple_dropdown_item_1line,
                 dsos
             )
-            val dsoView =
-                view.findViewById<AutoCompleteTextView>(R.id.autocomplete_astap_searchstart)
-            dsoView.setAdapter(wellKnownDsoArray)
-            dsoView.dropDownWidth = 400
-            setOnChangeListener(dsoView) {
-                startSearch = wellKnownDsoNameMap.get(dsoView.text.toString())
-                Log.d(TAG, "dsoview selected $startSearch")
-                val raDecView = view.findViewById<TextView>(R.id.text_setup_searchstart_ra_dec)
+            searchStartEdit.setAdapter(wellKnownDsoArray)
+            searchStartEdit.dropDownWidth = 400
+            setOnChangeListener(searchStartEdit) {
+                startSearch = wellKnownDsoNameMap.get(searchStartEdit.text.toString())
+                Log.d(TAG, "searchStartEdit selected $startSearch")
                 if (startSearch == null) {
-                    dsoView.setText("")
-                    raDecView.text = "Auto"
+                    searchStartEdit.setText("")
+                    searchStartRaDecView.text = "Auto"
                 } else {
-                    raDecView.text = startSearch!!.cel.toDisplayString()
+                    searchStartRaDecView.text = startSearch!!.cel.toDisplayString()
                 }
             }
         }
 
-        val degEdit = view.findViewById<EditText>(R.id.text_astap_fov_deg)
-        degEdit.setText("%.2f".format(fovDeg))
+        fovDegEdit.setText("%.2f".format(fovDeg))
 
         val focalLengthEdit = view.findViewById<EditText>(R.id.text_astap_fov_lens)
         focalLengthEdit.setText("%d".format(fovToFocalLength(fovDeg).toInt()))
 
+        val setEditable = fun (value: Boolean) {
+            fovDegEdit.setEnabled(value)
+            fovLensEdit.setEnabled(value)
+            searchStartEdit.setEnabled(value)
+        }
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)
         if (imageUri != null) {
             imageNameText.text = getUriFilename(requireContext().contentResolver, imageUri!!)
+            setEditable(true)
         } else {
             imageNameText.text = ""
+            setEditable(false)
         }
         val runButton = view.findViewById<Button>(R.id.setup_run)
         runButton.isEnabled =
