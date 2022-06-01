@@ -37,7 +37,7 @@ class ResultFragment : Fragment() {
         val annotatedImageView = view.findViewById<AnnotatedImageView>(R.id.view_annotatedimage)
         annotatedImageView.setSolution(solution)
         val setText = fun(viewId: Int, value: String) {
-            view.findViewById<TextView>(viewId).setText(value)
+            view.findViewById<TextView>(viewId).text = value
         }
 
         setText(
@@ -50,14 +50,16 @@ class ResultFragment : Fragment() {
         setText(R.id.text_result_imagename, solution.imageName)
         setText(R.id.text_result_fov_deg, "%.02f".format(solution.params.fovDeg))
 
-        class SeekBarListener: SeekBar.OnSeekBarChangeListener {
+        class SeekBarListener : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 annotatedImageView.setMatchedStarsDisplayFraction(progress.toDouble() / 100.0)
             }
+
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         }
-        var seekbar = view.findViewById<SeekBar>(R.id.seekbar_result_matchedstars)
+
+        val seekbar = view.findViewById<SeekBar>(R.id.seekbar_result_matchedstars)
         seekbar.setOnSeekBarChangeListener(SeekBarListener())
     }
 }

@@ -39,11 +39,11 @@ private fun isValidFovDeg(fovDeg: Double): Boolean {
 }
 
 private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
-    edit.setOnEditorActionListener { _, actionId, event ->
+    edit.setOnEditorActionListener { _, actionId, _ ->
         if (actionId == 0) cb(edit)
         false
     }
-    edit.setOnFocusChangeListener { v, hasFocus ->
+    edit.setOnFocusChangeListener { _, hasFocus ->
         if (!hasFocus) cb(edit)
     }
 }
@@ -93,7 +93,12 @@ class RunAstapFragment : Fragment() {
         if (savedInstanceState != null) {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
-        WellKnownDsoSet.registerOnSingletonLoaded { sendMessage(EVENT_WELLKNOWNDSO_LOADED, "" as Any) }
+        WellKnownDsoSet.registerOnSingletonLoaded {
+            sendMessage(
+                EVENT_WELLKNOWNDSO_LOADED,
+                "" as Any
+            )
+        }
         return inflater.inflate(R.layout.fragment_run_astap, container, false)
     }
 
@@ -109,10 +114,10 @@ class RunAstapFragment : Fragment() {
         thisView = view
 
         // Handle FOV degree changes
-        setOnChangeListener(view.findViewById<EditText>(R.id.text_astap_fov_deg)) { edit ->
+        setOnChangeListener(view.findViewById(R.id.text_astap_fov_deg)) { edit ->
             var deg = 0.0
             try {
-                deg = edit.getText().toString().toDouble()
+                deg = edit.text.toString().toDouble()
             } catch (e: Exception) {
             }
             if (isValidFovDeg(deg)) {
@@ -121,10 +126,10 @@ class RunAstapFragment : Fragment() {
             updateView()
         }
         // Handle FOV lens focal length changes
-        setOnChangeListener(view.findViewById<EditText>(R.id.text_astap_fov_lens)) { edit ->
+        setOnChangeListener(view.findViewById(R.id.text_astap_fov_lens)) { edit ->
             var mm = 0.0
             try {
-                mm = edit.getText().toString().toDouble()
+                mm = edit.text.toString().toDouble()
             } catch (e: Exception) {
             }
             if (mm > 0 || mm < 10000) {
@@ -136,21 +141,22 @@ class RunAstapFragment : Fragment() {
             updateView()
         }
         val pickFileButton = view.findViewById<Button>(R.id.astap_pick_file)
-        pickFileButton.setOnClickListener({
+        pickFileButton.setOnClickListener {
             val intent = Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
             pickFileLauncher.launch(intent)
-        })
+        }
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setOnClickListener({
+        runButton.setOnClickListener {
             onRunAstap()
-        })
+        }
         updateView()
     }
 
     // List of DSO names extracted from WellKnownDsoSet.
     private var wellKnownDsoArray: ArrayAdapter<String>? = null
+
     // Maps DSO names in the above -> WellKnownDso objects
     private val wellKnownDsoNameMap = HashMap<String, WellKnownDso>()
 
@@ -173,19 +179,21 @@ class RunAstapFragment : Fragment() {
             wellKnownDsoArray = ArrayAdapter<String>(
                 requireActivity(),
                 android.R.layout.simple_dropdown_item_1line,
-                dsos)
-            val dsoView = view.findViewById<AutoCompleteTextView>(R.id.autocomplete_astap_searchstart)
+                dsos
+            )
+            val dsoView =
+                view.findViewById<AutoCompleteTextView>(R.id.autocomplete_astap_searchstart)
             dsoView.setAdapter(wellKnownDsoArray)
-            dsoView.setDropDownWidth(400)
+            dsoView.dropDownWidth = 400
             setOnChangeListener(dsoView) {
-                startSearch = wellKnownDsoNameMap.get(dsoView.getText().toString())
+                startSearch = wellKnownDsoNameMap.get(dsoView.text.toString())
                 Log.d(TAG, "dsoview selected $startSearch")
                 val raDecView = view.findViewById<TextView>(R.id.text_setup_searchstart_ra_dec)
                 if (startSearch == null) {
                     dsoView.setText("")
-                    raDecView.setText("Auto")
+                    raDecView.text = "Auto"
                 } else {
-                    raDecView.setText(startSearch!!.cel.toDisplayString())
+                    raDecView.text = startSearch!!.cel.toDisplayString()
                 }
             }
         }
@@ -198,20 +206,19 @@ class RunAstapFragment : Fragment() {
 
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)
         if (imageUri != null) {
-            imageNameText.setText(getUriFilename(    requireContext().contentResolver, imageUri!!))
+            imageNameText.text = getUriFilename(requireContext().contentResolver, imageUri!!)
         } else {
-            imageNameText.setText("")
+            imageNameText.text = ""
         }
         val runButton = view.findViewById<Button>(R.id.setup_run)
-        runButton.setEnabled(isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoSet.getSingleton() != null)
+        runButton.isEnabled =
+            isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoSet.getSingleton() != null
     }
 
-    var dialog: AstapDialogFragment? = null
+    private var dialog: AstapDialogFragment? = null
 
-    val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
-        println("EVENTHANDLER: what=${msg.what} msg=${msg.obj}")
-
-        println("HANDLER $msg dialog=$dialog")
+    private val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
+        Log.d(TAG, "handler $msg dialog=$dialog")
         when (msg.what) {
             EVENT_MESSAGE -> {
                 dialog?.setMessage(msg.obj as String)
@@ -244,6 +251,7 @@ class RunAstapFragment : Fragment() {
             Message.obtain(eventHandler, what, message)
         )
     }
+
     private fun onRunAstap() {
         if (!isValidFovDeg(fovDeg) || imageUri == null) {
             throw Error("invalid args")
@@ -258,75 +266,80 @@ class RunAstapFragment : Fragment() {
         val thisStartSearchDso = startSearch
 
         dialog = AstapDialogFragment(
-            onAbort= {
+            onAbort = {
                 astapRunnerMu.withLock {
                     astapRunner?.abort()
                 }
             },
             fovDeg = thisFovDeg,
-            imageName= getUriFilename(activity.contentResolver, thisImageUri),
+            imageName = getUriFilename(activity.contentResolver, thisImageUri),
             searchOrigin = thisStartSearchDso?.cel
         )
         Thread(Runnable {
-                val resolver = activity.contentResolver
-                val ext = getUriMimeType(resolver, thisImageUri)
-                val inputStream = resolver.openInputStream(thisImageUri)
-                if (inputStream == null) {
-                    Log.e(TAG, "could not open $thisImageUri")
-                    return@Runnable
-                }
-                val sha256 = inputStream.use {
-                    inputStreamDigest(inputStream)
-                }
-                val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
-                val solverParams = SolverParameters(imagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
-                val solutionJsonPath = File(getSolutionDir(activity), "${solverParams.hashString()}.json")
-                var solution: Solution? = null
-                try {
-                    solution = readSolution(solutionJsonPath)
-                } catch (e: Exception) {
-                    Log.d(TAG,"readSolution: could not read cached solution in solutionJsonPath: $e: Running astap")
-                }
+            val resolver = activity.contentResolver
+            val ext = getUriMimeType(resolver, thisImageUri)
+            val inputStream = resolver.openInputStream(thisImageUri)
+            if (inputStream == null) {
+                Log.e(TAG, "could not open $thisImageUri")
+                return@Runnable
+            }
+            val sha256 = inputStream.use {
+                inputStreamDigest(inputStream)
+            }
+            val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
+            val solverParams =
+                SolverParameters(imagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
+            val solutionJsonPath =
+                File(getSolutionDir(activity), "${solverParams.hashString()}.json")
+            var solution: Solution? = null
+            try {
+                solution = readSolution(solutionJsonPath)
+            } catch (e: Exception) {
+                Log.d(
+                    TAG,
+                    "readSolution: could not read cached solution in solutionJsonPath: $e: Running astap"
+                )
+            }
 
-                if (solution == null) {
-                    astapRunnerMu.withLock {
-                        astapRunner = AstapRunner(
-                            context = requireContext(),
-                            onError = { message: String ->
-                                sendMessage(
-                                    EVENT_ERROR,
-                                    message as Any
-                                )
-                            },
-                            onMessage = { message: String ->
-                                sendMessage(
-                                    EVENT_MESSAGE,
-                                    message as Any
-                                )
-                            },
-                            solutionJsonPath = solutionJsonPath,
-                            solverParams = solverParams,
-                            imageName = getUriFilename(requireContext().contentResolver, thisImageUri)
-                        )
-                    }
-                    sendMessage(EVENT_SHOW_DIALOG, "" as Any)
-                    if (!imagePath.exists()) {
-                        copyUriTo(activity.contentResolver, thisImageUri, imagePath)
-                        sendMessage(EVENT_MESSAGE, "copied file" as Any)
-                    } else {
-                        sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Any)
-                    }
-                    astapRunner!!.run()
-                    sendMessage(EVENT_DISMISS_DIALOG, "" as Any)
+            if (solution == null) {
+                astapRunnerMu.withLock {
+                    astapRunner = AstapRunner(
+                        context = requireContext(),
+                        onError = { message: String ->
+                            sendMessage(
+                                EVENT_ERROR,
+                                message as Any
+                            )
+                        },
+                        onMessage = { message: String ->
+                            sendMessage(
+                                EVENT_MESSAGE,
+                                message as Any
+                            )
+                        },
+                        solutionJsonPath = solutionJsonPath,
+                        solverParams = solverParams,
+                        imageName = getUriFilename(requireContext().contentResolver, thisImageUri)
+                    )
                 }
-                if (!solutionJsonPath.exists()) {
-                    throw Error("could not build solution")
+                sendMessage(EVENT_SHOW_DIALOG, "" as Any)
+                if (!imagePath.exists()) {
+                    copyUriTo(activity.contentResolver, thisImageUri, imagePath)
+                    sendMessage(EVENT_MESSAGE, "copied file" as Any)
+                } else {
+                    sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Any)
                 }
-                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
+                astapRunner!!.run()
+                sendMessage(EVENT_DISMISS_DIALOG, "" as Any)
+            }
+            if (!solutionJsonPath.exists()) {
+                throw Error("could not build solution")
+            }
+            sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
         }).start()
     }
 
-    fun startSolutionFragment(solutionJsonPath: String) {
+    private fun startSolutionFragment(solutionJsonPath: String) {
         val bundle = Bundle()
         bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, solutionJsonPath)
         val fragment = ResultFragment()

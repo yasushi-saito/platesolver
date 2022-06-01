@@ -19,17 +19,19 @@ data class Solution(
     }
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 
+    // Checks the validity of this object. It should be called after deserializing from
+    // a JSON file.
     fun isValid(): Boolean {
-        if (version != CURRENT_VERSION) return false
-        return true
+        return version == CURRENT_VERSION
     }
-    // Convert pixel coordinate to WCS.
+
+    // Convert a pixel to celestial coordinate.
     fun pixelToCelestial(p: PixelCoordinate): CelestialCoordinate {
         return convertPixelToCelestial(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
     }
 
-    // Convert WCS to the pixel coordinate. Inverse of pixelToWcs.
-    fun wcsToPixel(wcs: CelestialCoordinate): PixelCoordinate {
+    // Convert a celestial to pixel coordinate. Inverse of pixelToCelestial.
+    fun celestialToPixel(wcs: CelestialCoordinate): PixelCoordinate {
         return convertCelestialToPixel(wcs, imageDimension, refPixel, refWcs, wcsToPixelMatrix)
     }
 }

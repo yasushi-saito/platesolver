@@ -137,7 +137,7 @@ private fun placeDsoLabels(
 
     for (e in solution.matchedStars) {
         val name = e.names[0]
-        val c = pixelCoordToCanvasCoord(solution.wcsToPixel(e.cel), imageDim, canvasDim)
+        val c = pixelCoordToCanvasCoord(solution.celestialToPixel(e.cel), imageDim, canvasDim)
         conflictDetector.addCircle(LabelCircle(c.x, c.y, circleRadius, label = name))
     }
 
@@ -154,7 +154,7 @@ private fun placeDsoLabels(
         val name = e.names[0]
 
         paint.getTextBounds(name, 0, name.length, textBounds)
-        val c = pixelCoordToCanvasCoord(solution.wcsToPixel(e.cel), imageDim, canvasDim)
+        val c = pixelCoordToCanvasCoord(solution.celestialToPixel(e.cel), imageDim, canvasDim)
 
         // Try a few points to place the label. Stop if we find a point what doesn't overlap
         // with existing labels. If all points overlap with existing labels, pick the one
@@ -197,7 +197,7 @@ private fun placeDsoLabels(
             }
         }
         conflictDetector.addRect(bestRect!!)
-        val center = pixelCoordToCanvasCoord(solution.wcsToPixel(e.cel), imageDim, canvasDim)
+        val center = pixelCoordToCanvasCoord(solution.celestialToPixel(e.cel), imageDim, canvasDim)
         placements.add(
             LabelPlacement(
                 circle = LabelCircle(center.x, center.y, circleRadius, label = name),
@@ -307,7 +307,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             val e = solution.matchedStars[i]
             val placement = labelPlacements[i]
 
-            val px = solution.wcsToPixel(e.cel)
+            val px = solution.celestialToPixel(e.cel)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 4f / scaleFactor
             if (false) {

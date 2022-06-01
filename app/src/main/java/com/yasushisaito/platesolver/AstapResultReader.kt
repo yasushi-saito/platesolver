@@ -13,8 +13,6 @@ class AstapResultReader(stream: InputStream) {
         const val CRPIX2 = "CRPIX2" // Y of the reference pixel
         const val CRVAL1 = "CRVAL1" // RA of reference pixel (deg)
         const val CRVAL2 = "CRVAL2" // DEC of reference pixel (deg)
-        private const val CDELT1 = "CDELT1" // X pixel size (deg)
-        private const val CDELT2 = "CDELT2" // Y pixel size (deg)
         const val CD1_1 = "CD1_1" // CD matrix to convert (x,y) to (Ra, Dec)
         const val CD1_2 = "CD1_2" // CD matrix to convert (x,y) to (Ra, Dec)
         const val CD2_1 = "CD2_1" // CD matrix to convert (x,y) to (Ra, Dec)

@@ -18,7 +18,9 @@ import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
-import java.io.*
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
 import java.security.MessageDigest
 
 // Computes a sha256 hex digest of the stream contents.
@@ -60,8 +62,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navigationView = findViewById<View>(R.id.nav_view) as NavigationView
         navigationView.setNavigationItemSelectedListener(this)
 
-        var fragment = when {
-            isStardbInstalled(this, STARDB_ANY) -> {
+        val fragment = when {
+            isStarDbInstalled(this, STARDB_ANY) -> {
                 RunAstapFragment()
             }
             else -> {
@@ -74,7 +76,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
 
-        Thread({
+        Thread {
             val astapCliPath = getAstapCliPath(this)
             assets.open("astap_cli").use { inputStream ->
                 FileOutputStream(astapCliPath).use { outputStream ->
@@ -82,12 +84,10 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
             if (!astapCliPath.setExecutable(true)) {
-                println("FILESDIR: cannot set $astapCliPath executable")
-            } else {
-                println("FILESDIR: successfully set $astapCliPath executable")
+                throw Exception("cannot set $astapCliPath executable")
             }
-            Log.d(TAG, "initialized")
-        }).start()
+            Log.d(TAG, "successfully set $astapCliPath executable")
+        }.start()
     }
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
@@ -143,19 +143,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        val id: Int = item.itemId
-        var fragment: Fragment?
-        when (id) {
-            R.id.nav_result -> fragment = ResultFragment()
-            R.id.nav_run_astap -> fragment = RunAstapFragment()
-            R.id.nav_settings -> fragment = SettingsFragment()
-            else -> throw Error("Invalid menu item: ${id}")
+        val fragment: Fragment = when (val id: Int = item.itemId) {
+            R.id.nav_result -> ResultFragment()
+            R.id.nav_run_astap -> RunAstapFragment()
+            R.id.nav_settings -> SettingsFragment()
+            else -> throw Error("Invalid menu item: $id")
         }
-        if (fragment != null) {
-            val ft = supportFragmentManager.beginTransaction()
-            ft.replace(R.id.content_frame, fragment)
-            ft.commit()
-        }
+        val ft = supportFragmentManager.beginTransaction()
+        ft.replace(R.id.content_frame, fragment)
+        ft.commit()
+
         val drawer = findViewById<View>(R.id.layout_drawer) as DrawerLayout
         drawer.closeDrawer(GravityCompat.START)
         return true

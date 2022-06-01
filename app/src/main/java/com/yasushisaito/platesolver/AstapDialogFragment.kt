@@ -21,25 +21,18 @@ class AstapDialogFragment(
     private var lastMessage: String? = null
     private var lastError: String? = null
 
-    companion object {
-        const val TAG = "AstapDialogFragment"
-    }
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialogView =
             requireActivity().layoutInflater.inflate(R.layout.fragment_astap_dialog, null)
         val abortButton = dialogView.findViewById<Button>(R.id.button_astap_abort)
-        abortButton.setOnClickListener { view -> onAbort() }
-        dialogView.findViewById<TextView>(R.id.text_astap_dialog_image_name).setText(imageName)
-        dialogView.findViewById<TextView>(R.id.text_astap_dialog_fov_deg).setText("%.2f".format(fovDeg))
-        dialogView.findViewById<TextView>(R.id.text_astap_dialog_search_origin).setText(run {
-            if (searchOrigin == null) {
-                "Auto"
-            } else {
-                searchOrigin!!.toDisplayString()
-            }
-        })
-        messageWidget = dialogView.findViewById<TextView>(R.id.text_astap_message)
+        abortButton.setOnClickListener { onAbort() }
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_image_name).text = imageName
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_fov_deg).text =
+            "%.2f".format(fovDeg)
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_search_origin).text = run {
+            searchOrigin?.toDisplayString() ?: "Auto"
+        }
+        messageWidget = dialogView.findViewById(R.id.text_astap_message)
         // Backfill the message in case set{Error,Message} was called before the view was created.
         lastMessage?.let { setMessage(it) }
         lastError?.let { setError(it) }
@@ -51,7 +44,7 @@ class AstapDialogFragment(
     // Set the status message line.
     fun setMessage(message: String) {
         messageWidget?.let {
-            it.setText(message)
+            it.text = message
             it.setTextColor(Color.BLACK)
         }
         lastMessage = message
@@ -60,7 +53,7 @@ class AstapDialogFragment(
     // Set the status message line with an error color.
     fun setError(message: String) {
         messageWidget?.let {
-            it.setText(message)
+            it.text = message
             it.setTextColor(Color.RED)
         }
         lastError = message

@@ -11,3 +11,6 @@ On abort:
         at com.yasushisaito.platesolver.SetupFragment.$r8$lambda$3IXJ-ksd7EuDe65Q8x8j5w7api4(Unknown Source:0)
         at com.yasushisaito.platesolver.SetupFragment$$ExternalSyntheticLambda6.run(Unknown Source:6)
         at java.lang.Thread.run(Thread.java:920)
+
+
+Select stars vs nonstars

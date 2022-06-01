@@ -2,6 +2,7 @@ package com.yasushisaito.platesolver
 
 import java.io.Serializable
 import java.lang.Math
+import kotlin.math.*
 
 
 // pixel image (x, y) to astronomertrical coordinate.
@@ -16,12 +17,6 @@ data class CelestialCoordinate(
     val ra: Double,
     // Declination, in range [-90, 90].
     val dec: Double) : Serializable {
-    // Computes the distance between this point and another point, in degrees.
-    fun distance(other: CelestialCoordinate): Double {
-        val dra = (ra - other.ra)
-        val ddec = (dec - other.dec)
-        return Math.sqrt(dra*dra + ddec*ddec)
-    }
 
     fun toDisplayString(): String {
         return "ra: %s\ndec: %s".format(
@@ -39,7 +34,7 @@ data class CanvasDimension(val width: Int, val height: Int)
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
 fun rightAscensionToString(ra: Double): String {
     val hour = (ra / 15.0).toInt()
-    var remainder = ra  - hour * 15
+    val remainder = ra  - hour * 15
     val min = (remainder * 4).toInt()
     val second = (remainder - min / 4) * 60
     return "%02dh%02dm%.2f".format(hour, min, second)
@@ -58,15 +53,15 @@ private fun degToRadian(deg: Double): Double {
 }
 
 private fun sinDeg(deg: Double): Double {
-    return Math.sin(degToRadian(deg))
+    return sin(degToRadian(deg))
 }
 
 private fun cosDeg(deg: Double): Double {
-    return Math.cos(degToRadian(deg))
+    return cos(degToRadian(deg))
 }
 
 //private val PIXEL_BIN_FACTOR = 57.5
-private val PIXEL_BIN_FACTOR = 180 / Math.PI // ??
+private const val PIXEL_BIN_FACTOR = 180 / Math.PI // ??
 
 // Convert pixel coordinate to WCS.
 //
@@ -91,15 +86,15 @@ fun convertPixelToCelestial(
     refPixel: PixelCoordinate,
     refCel: CelestialCoordinate,
     matrix: Matrix22): CelestialCoordinate {
-    val d = matrix.mult(Vector2(
+    val d = matrix.multiply(Vector2(
         (p.x - refPixel.x) / PIXEL_BIN_FACTOR,
         (imageDimension.height - p.y - refPixel.y) / PIXEL_BIN_FACTOR))
     val dRa = d.x
     val dDec =  d.y
     val delta = cosDeg(refCel.dec) - dDec * sinDeg(refCel.dec)
-    val gamma = Math.sqrt(dRa * dRa + delta * delta)
-    val ra = refCel.ra + radianToDeg(Math.atan2(dRa, delta))
-    val dec = radianToDeg(Math.atan((sinDeg(refCel.dec) + dDec * cosDeg(refCel.dec)) / gamma))
+    val gamma = sqrt(dRa * dRa + delta * delta)
+    val ra = refCel.ra + radianToDeg(atan2(dRa, delta))
+    val dec = radianToDeg(atan((sinDeg(refCel.dec) + dDec * cosDeg(refCel.dec)) / gamma))
     // println("ConvertPixelToWcs: p=$p refCel=$refCel dra=$dRa ddec=$dDec delta=$delta gamma=$gamma ra=$ra dec=$dec")
     return CelestialCoordinate(ra=ra, dec=dec)
     /*
@@ -135,7 +130,7 @@ fun convertCelestialToPixel(wcs: CelestialCoordinate,
     val h = sinDeg(wcs.dec)*sinDeg(refCel.dec) + cosDeg(wcs.dec)*cosDeg(refCel.dec)*cosDeg(wcs.ra-refCel.ra)
     val dRa = (cosDeg(wcs.dec)*sinDeg(wcs.ra-refCel.ra)) / h
     val dDec = (sinDeg(wcs.dec)*cosDeg(refCel.dec)-cosDeg(wcs.dec)*sinDeg(refCel.dec)*cosDeg(wcs.ra-refCel.ra)) / h
-    val d = matrix.mult(Vector2(dRa, dDec))
+    val d = matrix.multiply(Vector2(dRa, dDec))
     // Log.d("ConvertWcsToPixel", "wcs=$wcs refCel=$refCel h=$h dra=$dRa ddec=$dDec d=$d")
     return PixelCoordinate(x=refPixel.x + d.x * PIXEL_BIN_FACTOR, y=imageDimension.height - (d.y * PIXEL_BIN_FACTOR + refPixel.y))
 /*    val pv = matrix.mult(Vector2(wcs.ra - refCel.ra, wcs.dec - refCel.dec))

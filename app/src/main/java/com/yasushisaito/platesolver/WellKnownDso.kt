@@ -61,8 +61,6 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
             }
         }
 
-        data class WellKnownDsoEntry(val filename: String, val hash: String)
-
         // Starts loading the singleton reader object. Idempotent.
         // This function does not block.
         fun startLoadSingleton(assets: AssetManager, cacheDir: File) {
@@ -79,7 +77,7 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
             Thread {
                 singletonMu.withLock {
                     val filename = findWellKnownDsoFilename()
-                    val cachePath = File(cacheDir, filename + ".data")
+                    val cachePath = File(cacheDir, "${filename}.data")
                     singleton = readCache(cachePath)
                     if (singleton == null) {
                         Log.d(TAG, "reading asset $filename")
@@ -145,10 +143,13 @@ private fun writeCache(dso: WellKnownDsoSet, cachePath: File) {
 // Never raises exception.
 private fun readCache(cachePath: File): WellKnownDsoSet? {
     try {
-        FileInputStream(cachePath).use { fd->
+        FileInputStream(cachePath).use { fd ->
             val stream = ObjectInputStream(BufferedInputStream(fd))
             val dso = stream.readObject() as WellKnownDsoSet
-            Log.d(TAG, "readCache: successfully read dso objects with ${dso.entries.size} entries from $cachePath")
+            Log.d(
+                TAG,
+                "readCache: successfully read dso objects with ${dso.entries.size} entries from $cachePath"
+            )
             return dso
         }
     } catch (ex: Exception) {
