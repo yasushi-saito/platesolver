@@ -141,7 +141,7 @@ class AstapRunner(
         val cmdline = arrayListOf(
             getAstapCliPath(context).path,
             "-f", solverParams.imagePath,
-            "-d", getStarDbDir(context).path,
+            "-d", getStarDbDir(context, STARDB_DEFAULT).path,
             "-fov", solverParams.fovDeg.toString(),
             //"-ra", "18.05",
             //"-spd", "68"

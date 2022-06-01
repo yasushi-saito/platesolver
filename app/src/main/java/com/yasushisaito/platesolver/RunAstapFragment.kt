@@ -49,7 +49,7 @@ private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
 }
 
 
-class SetupFragment : Fragment() {
+class RunAstapFragment : Fragment() {
     companion object {
         const val TAG = "SetupFragment"
         const val DEFAULT_FOV_DEG = 2.0
@@ -94,7 +94,7 @@ class SetupFragment : Fragment() {
             fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
         }
         WellKnownDsoSet.registerOnSingletonLoaded { sendMessage(EVENT_WELLKNOWNDSO_LOADED, "" as Any) }
-        return inflater.inflate(R.layout.fragment_setup, container, false)
+        return inflater.inflate(R.layout.fragment_run_astap, container, false)
     }
 
     private var thisView: View? = null
@@ -109,7 +109,7 @@ class SetupFragment : Fragment() {
         thisView = view
 
         // Handle FOV degree changes
-        setOnChangeListener(view.findViewById<EditText>(R.id.text_setup_fov_deg)) { edit ->
+        setOnChangeListener(view.findViewById<EditText>(R.id.text_astap_fov_deg)) { edit ->
             var deg = 0.0
             try {
                 deg = edit.getText().toString().toDouble()
@@ -121,7 +121,7 @@ class SetupFragment : Fragment() {
             updateView()
         }
         // Handle FOV lens focal length changes
-        setOnChangeListener(view.findViewById<EditText>(R.id.text_setup_fov_lens)) { edit ->
+        setOnChangeListener(view.findViewById<EditText>(R.id.text_astap_fov_lens)) { edit ->
             var mm = 0.0
             try {
                 mm = edit.getText().toString().toDouble()
@@ -135,7 +135,7 @@ class SetupFragment : Fragment() {
             }
             updateView()
         }
-        val pickFileButton = view.findViewById<Button>(R.id.setup_pick_file)
+        val pickFileButton = view.findViewById<Button>(R.id.astap_pick_file)
         pickFileButton.setOnClickListener({
             val intent = Intent()
                 .setType("*/*")
@@ -174,7 +174,7 @@ class SetupFragment : Fragment() {
                 requireActivity(),
                 android.R.layout.simple_dropdown_item_1line,
                 dsos)
-            val dsoView = view.findViewById<AutoCompleteTextView>(R.id.autocomplete_setup_searchstart)
+            val dsoView = view.findViewById<AutoCompleteTextView>(R.id.autocomplete_astap_searchstart)
             dsoView.setAdapter(wellKnownDsoArray)
             dsoView.setDropDownWidth(400)
             setOnChangeListener(dsoView) {
@@ -190,10 +190,10 @@ class SetupFragment : Fragment() {
             }
         }
 
-        val degEdit = view.findViewById<EditText>(R.id.text_setup_fov_deg)
+        val degEdit = view.findViewById<EditText>(R.id.text_astap_fov_deg)
         degEdit.setText("%.2f".format(fovDeg))
 
-        val focalLengthEdit = view.findViewById<EditText>(R.id.text_setup_fov_lens)
+        val focalLengthEdit = view.findViewById<EditText>(R.id.text_astap_fov_lens)
         focalLengthEdit.setText("%d".format(fovToFocalLength(fovDeg).toInt()))
 
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)

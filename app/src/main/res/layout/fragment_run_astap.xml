@@ -15,27 +15,17 @@
         android:maxLines="2"
         android:minLines="2"
         android:text="Auto"
-        app:layout_constraintBottom_toBottomOf="@+id/autocomplete_setup_searchstart"
+        app:layout_constraintBottom_toBottomOf="@+id/autocomplete_astap_searchstart"
         app:layout_constraintStart_toStartOf="@+id/guideline5" />
 
     <Button
-        android:id="@+id/setup_pick_file"
+        android:id="@+id/astap_pick_file"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:text="Pick File"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
         tools:layout_editor_absoluteY="61dp" />
-
-    <Button
-        android:id="@+id/setup_install_stardb"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:onClick="onInstallStarDb"
-        android:text="Install\nStar DB (h17)"
-        app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/autocomplete_setup_searchstart" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
@@ -63,11 +53,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="deg)"
-        app:layout_constraintBaseline_toBaselineOf="@+id/text_setup_fov_deg"
-        app:layout_constraintStart_toEndOf="@+id/text_setup_fov_deg" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_deg"
+        app:layout_constraintStart_toEndOf="@+id/text_astap_fov_deg" />
 
     <EditText
-        android:id="@+id/text_setup_fov_lens"
+        android:id="@+id/text_astap_fov_lens"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
@@ -86,10 +76,10 @@
         android:layout_marginTop="16dp"
         android:text="Field of view"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/setup_pick_file" />
+        app:layout_constraintTop_toBottomOf="@+id/astap_pick_file" />
 
     <EditText
-        android:id="@+id/text_setup_fov_deg"
+        android:id="@+id/text_astap_fov_deg"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
@@ -105,8 +95,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="mm FX lens ("
-        app:layout_constraintBaseline_toBaselineOf="@+id/text_setup_fov_lens"
-        app:layout_constraintStart_toEndOf="@+id/text_setup_fov_lens" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_lens"
+        app:layout_constraintStart_toEndOf="@+id/text_astap_fov_lens" />
 
     <Button
         android:id="@+id/setup_run"
@@ -123,7 +113,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="imagename"
-        app:layout_constraintBaseline_toBaselineOf="@+id/setup_pick_file"
+        app:layout_constraintBaseline_toBaselineOf="@+id/astap_pick_file"
         app:layout_constraintStart_toStartOf="@+id/guideline5" />
 
     <androidx.constraintlayout.widget.Barrier
@@ -141,7 +131,7 @@
         app:layout_constraintGuide_begin="188dp" />
 
     <AutoCompleteTextView
-        android:id="@+id/autocomplete_setup_searchstart"
+        android:id="@+id/autocomplete_astap_searchstart"
         android:layout_width="100dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
@@ -158,7 +148,7 @@
         android:layout_marginTop="16dp"
         android:text="Search start"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/text_setup_fov_lens" />
+        app:layout_constraintTop_toBottomOf="@+id/text_astap_fov_lens" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline10"

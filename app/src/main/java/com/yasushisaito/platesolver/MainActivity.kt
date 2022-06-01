@@ -60,7 +60,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val navigationView = findViewById<View>(R.id.nav_view) as NavigationView
         navigationView.setNavigationItemSelectedListener(this)
 
-        val fragment = SetupFragment()
+        var fragment = when {
+            isStardbInstalled(this, STARDB_ANY) -> {
+                RunAstapFragment()
+            }
+            else -> {
+                SettingsFragment()
+            }
+        }
         val ft = supportFragmentManager.beginTransaction()
         ft.add(R.id.content_frame, fragment)
         ft.commit()
@@ -109,7 +116,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             val outputPath = File(this.getExternalFilesDir(null), "h17.zip")
             copyUriTo(contentResolver, uri, outputPath)
 
-            val starDbDir = getStarDbDir(this)
+            val starDbDir = getStarDbDir(this, STARDB_DEFAULT)
             if (!starDbDir.mkdirs()) {
                 println("mkdir $starDbDir failed")
                 return@Runnable
@@ -137,11 +144,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         val id: Int = item.itemId
-        println("NAVITEM: $id")
-        var fragment: Fragment? = null
+        var fragment: Fragment?
         when (id) {
             R.id.nav_result -> fragment = ResultFragment()
-            R.id.nav_setup -> fragment = SetupFragment()
+            R.id.nav_run_astap -> fragment = RunAstapFragment()
+            R.id.nav_settings -> fragment = SettingsFragment()
             else -> throw Error("Invalid menu item: ${id}")
         }
         if (fragment != null) {

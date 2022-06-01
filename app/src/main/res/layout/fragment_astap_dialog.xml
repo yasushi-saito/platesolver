@@ -70,7 +70,7 @@
         app:layout_constraintGuide_begin="193dp" />
 
     <EditText
-        android:id="@+id/text_astap_image_name"
+        android:id="@+id/text_astap_dialog_image_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
@@ -80,7 +80,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline9" />
 
     <EditText
-        android:id="@+id/text_astap_fov_deg"
+        android:id="@+id/text_astap_dialog_fov_deg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
@@ -89,7 +89,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline9" />
 
     <EditText
-        android:id="@+id/text_astap_search_origin"
+        android:id="@+id/text_astap_dialog_search_origin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
@@ -106,10 +106,10 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progress_astap" />
+        app:layout_constraintTop_toBottomOf="@+id/progress_astap_dialog" />
 
     <ProgressBar
-        android:id="@+id/progress_astap"
+        android:id="@+id/progress_astap_dialog"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="0dp"
         android:layout_height="wrap_content"

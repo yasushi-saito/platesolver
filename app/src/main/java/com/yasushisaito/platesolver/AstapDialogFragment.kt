@@ -30,9 +30,9 @@ class AstapDialogFragment(
             requireActivity().layoutInflater.inflate(R.layout.fragment_astap_dialog, null)
         val abortButton = dialogView.findViewById<Button>(R.id.button_astap_abort)
         abortButton.setOnClickListener { view -> onAbort() }
-        dialogView.findViewById<TextView>(R.id.text_astap_image_name).setText(imageName)
-        dialogView.findViewById<TextView>(R.id.text_astap_fov_deg).setText("%.2f".format(fovDeg))
-        dialogView.findViewById<TextView>(R.id.text_astap_search_origin).setText(run {
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_image_name).setText(imageName)
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_fov_deg).setText("%.2f".format(fovDeg))
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_search_origin).setText(run {
             if (searchOrigin == null) {
                 "Auto"
             } else {
