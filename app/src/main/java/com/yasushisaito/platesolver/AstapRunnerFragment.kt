@@ -24,8 +24,8 @@ import kotlin.math.tan
 
 // Convert the lens focal length (FX) to
 // the field of view of the image
-fun focalLengthToFov(lensmm: Double): Double {
-    val rad = 2 * atan(36.0 / (2 * lensmm))
+fun focalLengthToFov(lensMm: Double): Double {
+    val rad = 2 * atan(36.0 / (2 * lensMm))
     return rad * 180 / Math.PI
 }
 
@@ -194,7 +194,7 @@ class RunAstapFragment : Fragment() {
             searchStartEdit.setAdapter(wellKnownDsoArray)
             searchStartEdit.dropDownWidth = 400
             setOnChangeListener(searchStartEdit) {
-                startSearch = wellKnownDsoNameMap.get(searchStartEdit.text.toString())
+                startSearch = wellKnownDsoNameMap[searchStartEdit.text.toString()]
                 Log.d(TAG, "searchStartEdit selected $startSearch")
                 if (startSearch == null) {
                     searchStartEdit.setText("")
@@ -210,10 +210,10 @@ class RunAstapFragment : Fragment() {
         val focalLengthEdit = view.findViewById<EditText>(R.id.text_astap_fov_lens)
         focalLengthEdit.setText("%d".format(fovToFocalLength(fovDeg).toInt()))
 
-        val setEditable = fun (value: Boolean) {
-            fovDegEdit.setEnabled(value)
-            fovLensEdit.setEnabled(value)
-            searchStartEdit.setEnabled(value)
+        val setEditable = fun(value: Boolean) {
+            fovDegEdit.isEnabled = value
+            fovLensEdit.isEnabled = value
+            searchStartEdit.isEnabled = value
         }
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)
         if (imageUri != null) {
@@ -265,9 +265,9 @@ class RunAstapFragment : Fragment() {
     }
 
     private fun onRunAstap() {
-        if (!isValidFovDeg(fovDeg) || imageUri == null) {
-            throw Exception("invalid args")
-        }
+        assert(
+            isValidFovDeg(fovDeg) && imageUri != null
+        ) { Log.e(TAG, "fovDeg=$fovDeg, imageUri=$imageUri") }
 
         val activity = requireActivity()
         val astapRunnerMu = ReentrantLock()
@@ -332,15 +332,21 @@ class RunAstapFragment : Fragment() {
                 val result = astapRunner!!.run()
                 when {
                     result.error != "" -> sendMessage(EVENT_ERROR_MESSAGE, result.error)
-                    result.exitCode == 0 -> sendMessage(EVENT_MESSAGE, "Astap finished successfully")
-                    result.exitCode == 128+9 || result.exitCode == 128 + 15 -> {
+                    result.exitCode == 0 -> sendMessage(
+                        EVENT_MESSAGE,
+                        "Astap finished successfully"
+                    )
+                    result.exitCode == 128 + 9 || result.exitCode == 128 + 15 -> {
                         // SIGTERM or SIGKILL
                         sendMessage(EVENT_MESSAGE, "Astap aborted")
                     }
                     result.exitCode != 0 -> {
                         val stdout = String(result.stdout)
                         val stderr = String(result.stderr)
-                        sendMessage(EVENT_ERROR_MESSAGE, "Astap failed with outputs: $stdout\nstderr: $stderr")
+                        sendMessage(
+                            EVENT_ERROR_MESSAGE,
+                            "Astap failed with outputs: $stdout\nstderr: $stderr"
+                        )
                     }
                 }
                 if (!solutionJsonPath.exists()) {

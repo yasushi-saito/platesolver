@@ -8,7 +8,7 @@ import java.io.File
 import java.io.FileOutputStream
 
 fun copyUriTo(contentResolver: ContentResolver, uri: Uri, destPath: File) {
-    val inputStream = contentResolver.openInputStream(uri) ?: throw Error("copyUriTo: could not open $uri")
+    val inputStream = contentResolver.openInputStream(uri) ?: throw Exception("copyUriTo: could not open $uri")
     inputStream.use {
         FileOutputStream(destPath).use { outputStream ->
             inputStream.copyTo(outputStream)

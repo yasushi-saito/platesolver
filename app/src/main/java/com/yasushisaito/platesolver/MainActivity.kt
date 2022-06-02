@@ -147,7 +147,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_result -> ResultFragment()
             R.id.nav_run_astap -> RunAstapFragment()
             R.id.nav_settings -> SettingsFragment()
-            else -> throw Error("Invalid menu item: $id")
+            else -> throw Exception("Invalid menu item: $id")
         }
         val ft = supportFragmentManager.beginTransaction()
         ft.replace(R.id.content_frame, fragment)

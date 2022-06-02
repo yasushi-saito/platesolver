@@ -25,7 +25,7 @@ class ResultFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         val jsonPath = arguments?.getString(BUNDLE_KEY_SOLUTION_JSON_PATH)
-            ?: throw Error("$BUNDLE_KEY_SOLUTION_JSON_PATH not found")
+            ?: throw Exception("$BUNDLE_KEY_SOLUTION_JSON_PATH not found")
         solution = readSolution(File(jsonPath))
         return inflater.inflate(R.layout.fragment_result, container, false)
     }

@@ -4,6 +4,7 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="../../../../layout/custom_preview.xml" value="0.20572916666666666" />
+        <entry key="app/src/main/res/drawable/ic_launcher_background.xml" value="0.221" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
         <entry key="app/src/main/res/layout/app_bar_main.xml" value="0.1" />
         <entry key="app/src/main/res/layout/fragment_astap_dialog.xml" value="0.4" />
@@ -11,7 +12,7 @@
         <entry key="app/src/main/res/layout/fragment_run_astap.xml" value="0.5369791666666667" />
         <entry key="app/src/main/res/layout/fragment_settings.xml" value="0.5359375" />
         <entry key="app/src/main/res/layout/fragment_setup.xml" value="0.67" />
-        <entry key="app/src/main/res/layout/nav_header_main.xml" value="0.1" />
+        <entry key="app/src/main/res/layout/nav_header_main.xml" value="0.2" />
         <entry key="app/src/main/res/layout/old_activity_main.xml" value="0.35989583333333336" />
         <entry key="app/src/main/res/layout/setup_view.xml" value="0.35885416666666664" />
         <entry key="app/src/main/res/layout/toolbar_main.xml" value="0.35885416666666664" />
