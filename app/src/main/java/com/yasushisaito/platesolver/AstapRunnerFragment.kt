@@ -51,7 +51,7 @@ private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
 
 class RunAstapFragment : Fragment() {
     companion object {
-        const val TAG = "SetupFragment"
+        const val TAG = "RunAstapFragment"
         const val DEFAULT_FOV_DEG = 2.0
         const val BUNDLE_KEY_FOV_DEG = "fovDeg"
 
@@ -228,7 +228,7 @@ class RunAstapFragment : Fragment() {
             isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoSet.getSingleton() != null
     }
 
-    private var dialog: AstapDialogFragment? = null
+    private var dialog: AstapRunnerDialogFragment? = null
 
     private val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
         Log.d(TAG, "handler $msg dialog=$dialog")
@@ -277,7 +277,7 @@ class RunAstapFragment : Fragment() {
         val thisFovDeg = fovDeg
         val thisStartSearchDso = startSearch
 
-        dialog = AstapDialogFragment(
+        dialog = AstapRunnerDialogFragment(
             onAbort = {
                 astapRunnerMu.withLock {
                     astapRunner?.abort()
@@ -313,22 +313,11 @@ class RunAstapFragment : Fragment() {
                 Log.d(TAG, "Could not read $solutionJsonPath: $ex; Running astap")
             }
             try {
+                sendMessage(EVENT_MESSAGE, "Running astap...")
                 // The solution json doesn't exist yet. Run astap_cli.
                 astapRunnerMu.withLock {
                     astapRunner = AstapRunner(
                         context = requireContext(),
-                        onError = { message: String ->
-                            sendMessage(
-                                EVENT_ERROR_MESSAGE,
-                                message as Any
-                            )
-                        },
-                        onMessage = { message: String ->
-                            sendMessage(
-                                EVENT_MESSAGE,
-                                message as Any
-                            )
-                        },
                         solutionJsonPath = solutionJsonPath,
                         solverParams = solverParams,
                         imageName = getUriFilename(requireContext().contentResolver, thisImageUri)
@@ -336,14 +325,25 @@ class RunAstapFragment : Fragment() {
                 }
                 sendMessage(EVENT_SHOW_DIALOG, "" as Any)
                 if (!imagePath.exists()) {
+                    sendMessage(EVENT_MESSAGE, "copying file...")
                     copyUriTo(activity.contentResolver, thisImageUri, imagePath)
-                    sendMessage(EVENT_MESSAGE, "copied file" as Any)
-                } else {
-                    sendMessage(EVENT_MESSAGE, "file already exists; skipping copying" as Any)
                 }
-                astapRunner!!.run()
+                sendMessage(EVENT_MESSAGE, "running Astap...")
+                val result = astapRunner!!.run()
+                when {
+                    result.error != "" -> sendMessage(EVENT_ERROR_MESSAGE, result.error)
+                    result.exitCode == 0 -> sendMessage(EVENT_MESSAGE, "Astap finished successfully")
+                    result.exitCode == 128+9 || result.exitCode == 128 + 15 -> {
+                        // SIGTERM or SIGKILL
+                        sendMessage(EVENT_MESSAGE, "Astap aborted")
+                    }
+                    result.exitCode != 0 -> {
+                        val stdout = String(result.stdout)
+                        val stderr = String(result.stderr)
+                        sendMessage(EVENT_ERROR_MESSAGE, "Astap failed with outputs: $stdout\nstderr: $stderr")
+                    }
+                }
                 if (!solutionJsonPath.exists()) {
-                    sendMessage(EVENT_ERROR_MESSAGE, "could not build solution")
                     throw Exception("could not build solution")
                 }
             } catch (ex: Exception) {

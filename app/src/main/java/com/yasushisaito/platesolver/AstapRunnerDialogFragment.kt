@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.app.Dialog
 import android.graphics.Color
 import android.os.Bundle
+import android.text.method.ScrollingMovementMethod
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
@@ -12,14 +13,14 @@ import androidx.fragment.app.DialogFragment
 
 // A dialog shown while astap is running.
 // Can be accessed only by the UI thread.
-class AstapDialogFragment(
+class AstapRunnerDialogFragment(
     val imageName: String,
     val fovDeg: Double,
     val searchOrigin: CelestialCoordinate?,
     val onAbort: () -> Unit
 ) : DialogFragment() {
     // The TextView that shows status messages.
-    private var messageWidget: TextView? = null
+    private var messageView: TextView? = null
     private var lastMessage: String? = null
     private var lastError: String? = null
 
@@ -46,7 +47,9 @@ class AstapDialogFragment(
         dialogView.findViewById<TextView>(R.id.text_astap_dialog_search_origin).text = run {
             searchOrigin?.toDisplayString() ?: "Auto"
         }
-        messageWidget = dialogView.findViewById(R.id.text_astap_message)
+        messageView = dialogView.findViewById(R.id.text_astap_message)
+        messageView!!.movementMethod = ScrollingMovementMethod()
+
         // Backfill the message in case set{Error,Message} was called before the view was created.
         lastMessage?.let { setMessage(it) }
         lastError?.let { setError(it) }
@@ -57,7 +60,7 @@ class AstapDialogFragment(
 
     // Set the status message line.
     fun setMessage(message: String) {
-        messageWidget?.let {
+        messageView?.let {
             it.text = message
             it.setTextColor(Color.BLACK)
         }
@@ -66,7 +69,7 @@ class AstapDialogFragment(
 
     // Set the status message line with an error color.
     fun setError(message: String) {
-        messageWidget?.let {
+        messageView?.let {
             it.text = message
             it.setTextColor(Color.RED)
         }

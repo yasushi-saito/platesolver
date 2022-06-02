@@ -3,9 +3,7 @@ package com.yasushisaito.platesolver
 import android.content.Context
 import android.util.Log
 import com.google.gson.Gson
-import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
+import java.io.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -24,6 +22,9 @@ private fun removeExt(path: File): File {
     return File(path.parent, basename)
 }
 
+// Replace the extension of the given file.
+// Example:
+//   replaceExt(File("foo/bar.com"), ".exe") -> File("foo/bar.exe")
 private fun replaceExt(path: File, ext: String): File {
     val basename = removeExt(path)
     return File(basename.parentFile, basename.name + ext)
@@ -37,28 +38,41 @@ class AstapRunner(
     val solverParams: SolverParameters,
     // The destination path of the final .json file
     val solutionJsonPath: File,
-    // onMessage will update the dialog status line.
-    val onMessage: (message: String) -> Unit,
-    // onMessage will update the dialog status line with an error color.
-    val onError: (message: String) -> Unit,
 ) {
     companion object {
         const val TAG = "AstapRunner"
     }
 
+    data class Result(
+        // Message produced by AstapRunner internally.
+        // If this field is set, the fields that follow should be ignored
+        // since the process may not have started.
+        val error: String,
+        // Astap process exit code. 0 = success. Value >=128 means death by a signal.
+        val exitCode: Int,
+        // Contents of the stdout
+        val stdout: ByteArray,
+        // Contents of the stderr
+        val stderr: ByteArray,
+    )
+
     // Starts the astap process. It blocks until the
     // process finishes. If astap finishes successfully,
     // it will create a file at solutionJsonPath.
-    fun run() {
+    fun run(): Result {
         val imagePath = File(solverParams.imagePath)
         val wcsPath = replaceExt(imagePath, ".wcs")
         wcsPath.delete() // delete an old result file if any
-        onMessage("Running astap...")
-        runAstap(solverParams)
+        val result = runAstap(solverParams)
         if (!wcsPath.exists()) {
-            onError("File $wcsPath does not exist")
-            return
+            if (result.exitCode != 0) return result
+            return Result(
+                error="astap finished successfully, but it did not create file $wcsPath",
+                exitCode=0,
+                stdout= byteArrayOf(),
+                stderr=byteArrayOf())
         }
+        try {
         FileInputStream(wcsPath).use { wcsStream ->
             val wcs = AstapResultReader(wcsStream)
 
@@ -118,6 +132,15 @@ class AstapRunner(
             val js = Gson().toJson(solution)
             Log.d(TAG, "writing result to $solutionJsonPath")
             writeFileAtomic(solutionJsonPath, js.toByteArray())
+            return result
+        }
+        } catch (ex: Exception) {
+            return Result(
+                error="RunAstap failed with exception $ex",
+                exitCode=0,
+                stdout =  byteArrayOf(),
+                stderr = byteArrayOf()
+            )
         }
     }
 
@@ -135,7 +158,7 @@ class AstapRunner(
         }
     }
 
-    private fun runAstap(solverParams: SolverParameters) {
+    private fun runAstap(solverParams: SolverParameters): Result {
         val imagePath = File(solverParams.imagePath)
         val cmdline = arrayListOf(
             getAstapCliPath(context).path,
@@ -155,33 +178,52 @@ class AstapRunner(
         Log.d(TAG, "cmdline=${cmdlineArray.contentToString()}")
 
         procMu.withLock {
-            if (aborted) return@runAstap
+            if (aborted) {
+                return@runAstap Result(
+                    error="",
+                    exitCode=143, // emulate SIGTERM
+                    stdout= byteArrayOf(),
+                    stderr= byteArrayOf()
+                )
+            }
             proc = Runtime.getRuntime().exec(cmdlineArray, null, imagePath.parentFile)
         }
 
-        val readOutputs = fun(stream: InputStream) {
-            Thread {
+        val readOutputs = fun(stream: InputStream, out: OutputStream) : Thread {
+            val thread = Thread {
                 val buf = ByteArray(8192)
                 try {
                     while (true) {
                         val len = stream.read(buf)
                         if (len < 0) break
                         System.out.write(buf, 0, len)
+                        out.write(buf)
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "output reader: $e (ignored)")
                 }
-            }.start()
+            }
+            thread.start()
+            return thread
         }
-        readOutputs(proc!!.inputStream)
-        readOutputs(proc!!.errorStream)
+        val stdoutBuf = ByteArrayOutputStream()
+        val stdoutReaderThread = readOutputs(proc!!.inputStream, stdoutBuf)
+        val stderrBuf = ByteArrayOutputStream()
+        val stderrReaderThread = readOutputs(proc!!.errorStream, stderrBuf)
         val exitCode = proc!!.waitFor()
         if (exitCode != 0) {
             Log.e(TAG, "exitCode=$exitCode")
         }
+        stdoutReaderThread.join()
+        stderrReaderThread.join()
         procMu.withLock {
             proc = null
         }
+        return Result(
+            error="",
+            exitCode=exitCode,
+            stdout=stdoutBuf.toByteArray(),
+            stderr=stderrBuf.toByteArray())
     }
 }
 

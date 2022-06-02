@@ -132,6 +132,8 @@
         android:layout_marginTop="64dp"
         android:gravity="center_horizontal"
         android:text="Message"
+        android:scrollbars="vertical"
+        app:layout_constraintHeight_max="200dp"
         app:layout_constraintEnd_toStartOf="@+id/guideline7"
         app:layout_constraintStart_toStartOf="@+id/guideline6"
         app:layout_constraintTop_toBottomOf="@+id/textView5" />
