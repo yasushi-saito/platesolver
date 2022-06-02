@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private lateinit var drawerMenuView: NavigationView
     private lateinit var pastSolutionsSubmenu: SubMenu
+    private lateinit var solutionSet: SolutionSet
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +71,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerMenuView = findViewById<NavigationView>(R.id.nav_view)
         drawerMenuView.setNavigationItemSelectedListener(this)
         pastSolutionsSubmenu = drawerMenuView.menu.addSubMenu("Past Solutions")
-
+        solutionSet = SolutionSet.getSingleton(getSolutionDir(this))
         updateSolutionMenuItems()
 
         val fragment = when {
@@ -102,19 +103,19 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateSolutionMenuItems() {
-        val addSolutionMenuItem = fun(name: String, modTimeMs: Long) {
-            val modTime = Instant.ofEpochMilli(modTimeMs)
+        val addSolutionMenuItem = fun(e: SolutionSet.Entry) {
+            val modTime = Instant.ofEpochMilli(e.modTime)
+            val text: String ="${e.solution!!.imageName}\n${modTime.toString()}"
             pastSolutionsSubmenu.add(
                 Menu.NONE,
-                SOLUTION_MENU_ITEM_ID,
+                SOLUTION_MENU_ITEM_ID + e.id,
                 Menu.CATEGORY_SECONDARY,
-                "$name\n${modTime.toString()}"
+                text
             )
         }
         pastSolutionsSubmenu.removeGroup(Menu.NONE)
-        val pastSolutions = SolutionSet.getSingleton(getSolutionDir(this))
-        for (e in pastSolutions.refresh()) {
-            addSolutionMenuItem(e.solution!!.imageName, e.modTime)
+        for (e in solutionSet.refresh()) {
+            addSolutionMenuItem(e)
         }
     }
 
@@ -171,12 +172,32 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
-        val fragment: Fragment = when (val id: Int = item.itemId) {
-            /*R.id.nav_result -> ResultFragment()*/
-            R.id.nav_run_astap -> RunAstapFragment()
-            R.id.nav_settings -> SettingsFragment()
-            else -> throw Exception("Invalid menu item: $id")
+        val fragment: Fragment? = when {
+            item.itemId == R.id.nav_run_astap -> RunAstapFragment()
+            item.itemId == R.id.nav_settings -> SettingsFragment()
+            item.itemId >= SOLUTION_MENU_ITEM_ID && item.itemId < SOLUTION_MENU_ITEM_ID + SolutionSet.MAX_ENTRIES -> {
+                val id = item.itemId - SOLUTION_MENU_ITEM_ID
+                val e = solutionSet.findWithId(id)
+                if (e == null) {
+                    Log.e(TAG, "no solution found with id $id")
+                    val dialog = AlertDialog.Builder(this)
+                        .setTitle("Error")
+                        .setMessage("No solution found with id $id")
+                        .create()
+                    dialog.show()
+                    null
+                } else {
+                    val bundle = Bundle()
+                    bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, e.jsonPath.absolutePath)
+                    val fragment = ResultFragment()
+                    fragment.arguments = bundle
+                    fragment
+                }
+            }
+            else -> null
         }
+        if (fragment == null) return true
+
         val ft = supportFragmentManager.beginTransaction()
         ft.replace(R.id.content_frame, fragment)
         ft.commit()

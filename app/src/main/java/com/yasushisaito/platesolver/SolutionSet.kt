@@ -21,9 +21,17 @@ class SolutionSet(private val solutionDir: File) {
             }
             return singleton!!
         }
+
+        // The maximum number of past solutions to retain.
+        // Past this limit, older solutions are deleted.
+        const val MAX_ENTRIES = 40
     }
     data class Entry(
-        val fileName: String,
+        // A unique ID assigned to this entry. It remains stable during the lifetime of the process.
+        // The values are dense integers starting from 1.
+        val id: Int,
+        // The solution json path.
+        val jsonPath: File,
         // negative cache entry. If invalid, all other fields are invalid
         val invalid: Boolean,
         // The time the solution was created, as millisec from Unix epoch
@@ -32,9 +40,17 @@ class SolutionSet(private val solutionDir: File) {
         val solution: Solution?
     )
 
+    fun findWithId(id: Int): Entry? {
+        for (e in entriesMap.entries.iterator()) {
+            if (e.value.id == id) return e.value
+        }
+        return null
+    }
+
     // keys are filenames under solutionDir
     private val mu = ReentrantLock()
     private val entriesMap = HashMap<String, Entry>()
+    private var nextId = 1
 
     init {
         Log.d(TAG, "REFRESHING")
@@ -43,7 +59,7 @@ class SolutionSet(private val solutionDir: File) {
 
     // Lists the valid entries in entriesMap. Sorted by modtime (newest first), then filename.
     fun refresh() : ArrayList<Entry> {
-        return mu.withLock {
+        mu.withLock {
             val fsEntriesMap = HashSet<String>()
             for (fileName in solutionDir.list() ?: arrayOf()) {
                 fsEntriesMap.add(fileName)
@@ -52,7 +68,8 @@ class SolutionSet(private val solutionDir: File) {
                         val path = File(solutionDir, fileName)
                         val solution = readSolution(path)
                         entriesMap[fileName] = Entry(
-                            fileName = fileName,
+                            id = nextId++,
+                            jsonPath = File(solutionDir, fileName),
                             invalid = false,
                             modTime = path.lastModified(),
                             solution = solution
@@ -60,7 +77,8 @@ class SolutionSet(private val solutionDir: File) {
                         Log.d(TAG, "successfully added $fileName")
                     } catch (ex: Exception) {
                         entriesMap[fileName] = Entry(
-                            fileName = fileName,
+                            id = nextId++,
+                            jsonPath = File(solutionDir, fileName),
                             invalid = true,
                             modTime = 0,
                             solution = null
@@ -79,10 +97,14 @@ class SolutionSet(private val solutionDir: File) {
             entriesList.sortWith { a, b: Entry -> Int
                 if (a.modTime > b.modTime) -1
                 else if (a.modTime < b.modTime) 1
-                else if (a.fileName < b.fileName) -1
-                else if (a.fileName > b.fileName) 1
+                else if (a.jsonPath.name < b.jsonPath.name) -1
+                else if (a.jsonPath.name > b.jsonPath.name) 1
                 else 0
             }
+            while (entriesList.size > MAX_ENTRIES) {
+                entriesList.removeAt(entriesList.size-1)
+            }
+            // TODO(saito) GC old files in the background
             return entriesList
         }
     }
