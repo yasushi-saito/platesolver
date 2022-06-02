@@ -33,6 +33,7 @@ class SolutionSet(private val solutionDir: File) {
     )
 
     // keys are filenames under solutionDir
+    private val mu = ReentrantLock()
     private val entriesMap = HashMap<String, Entry>()
 
     init {
@@ -42,46 +43,47 @@ class SolutionSet(private val solutionDir: File) {
 
     // Lists the valid entries in entriesMap. Sorted by modtime (newest first), then filename.
     fun refresh() : ArrayList<Entry> {
-        Log.d(TAG, "REFRESHING2")
-        val fsEntriesMap = HashSet<String>()
-        for (fileName in solutionDir.list() ?: arrayOf()) {
-            fsEntriesMap.add(fileName)
-            if (fileName !in entriesMap) {
-                try {
-                    val path = File(solutionDir, fileName)
-                    val solution = readSolution(path)
-                    entriesMap[fileName] = Entry(
-                        fileName = fileName,
-                        invalid = false,
-                        modTime = path.lastModified(),
-                        solution = solution
-                    )
-                    Log.d(TAG, "successfully added $fileName")
-                } catch (ex: Exception) {
-                    entriesMap[fileName] = Entry(
-                        fileName = fileName,
-                        invalid = true,
-                        modTime = 0,
-                        solution = null
-                    )
-                    Log.d(TAG, "could not parse $fileName")
+        return mu.withLock {
+            val fsEntriesMap = HashSet<String>()
+            for (fileName in solutionDir.list() ?: arrayOf()) {
+                fsEntriesMap.add(fileName)
+                if (fileName !in entriesMap) {
+                    try {
+                        val path = File(solutionDir, fileName)
+                        val solution = readSolution(path)
+                        entriesMap[fileName] = Entry(
+                            fileName = fileName,
+                            invalid = false,
+                            modTime = path.lastModified(),
+                            solution = solution
+                        )
+                        Log.d(TAG, "successfully added $fileName")
+                    } catch (ex: Exception) {
+                        entriesMap[fileName] = Entry(
+                            fileName = fileName,
+                            invalid = true,
+                            modTime = 0,
+                            solution = null
+                        )
+                        Log.d(TAG, "could not parse $fileName")
+                    }
                 }
             }
+            entriesMap.keys.removeIf { it !in fsEntriesMap }
+            // Sync entriesMap and entriesList
+            val entriesList = ArrayList<Entry>()
+            for (e in entriesMap.entries.iterator()) {
+                if (!e.value.invalid) entriesList.add(e.value)
+            }
+            // Sort newest first.
+            entriesList.sortWith { a, b: Entry -> Int
+                if (a.modTime > b.modTime) -1
+                else if (a.modTime < b.modTime) 1
+                else if (a.fileName < b.fileName) -1
+                else if (a.fileName > b.fileName) 1
+                else 0
+            }
+            return entriesList
         }
-        entriesMap.keys.removeIf { it !in fsEntriesMap }
-        // Sync entriesMap and entriesList
-        val entriesList = ArrayList<Entry>()
-        for (e in entriesMap.entries.iterator()) {
-            if (!e.value.invalid) entriesList.add(e.value)
-        }
-        // Sort newest first.
-        entriesList.sortWith { a, b: Entry -> Int
-            if (a.modTime > b.modTime) -1
-            else if (a.modTime < b.modTime) 1
-            else if (a.fileName < b.fileName) -1
-            else if (a.fileName > b.fileName) 1
-            else 0
-        }
-        return entriesList
     }
 }

@@ -42,8 +42,7 @@ class AstapRunnerDialogFragment(
         closeButton.isEnabled = false
 
         dialogView.findViewById<TextView>(R.id.text_astap_dialog_image_name).text = imageName
-        dialogView.findViewById<TextView>(R.id.text_astap_dialog_fov_deg).text =
-            "%.2f".format(fovDeg)
+        dialogView.findViewById<TextView>(R.id.text_astap_dialog_fov_deg).text = "%.2f".format(fovDeg)
         dialogView.findViewById<TextView>(R.id.text_astap_dialog_search_origin).text = run {
             searchOrigin?.toDisplayString() ?: "Auto"
         }

@@ -24,6 +24,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
+import java.time.Instant
 
 // Computes a sha256 hex digest of the stream contents.
 fun inputStreamDigest(stream: InputStream): String {
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private lateinit var drawerMenuView: NavigationView
-    private lateinit var solutionsSubmenu: SubMenu
+    private lateinit var pastSolutionsSubmenu: SubMenu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +69,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         drawerMenuView = findViewById<NavigationView>(R.id.nav_view)
         drawerMenuView.setNavigationItemSelectedListener(this)
-        solutionsSubmenu = drawerMenuView.menu.addSubMenu("Results")
+        pastSolutionsSubmenu = drawerMenuView.menu.addSubMenu("Past Solutions")
 
         updateSolutionMenuItems()
 
@@ -101,23 +102,20 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateSolutionMenuItems() {
-        Log.d(TAG, "UPDATESOLUTION")
-        val addSolutionMenuItem = fun(name: String) {
-            solutionsSubmenu.add(
+        val addSolutionMenuItem = fun(name: String, modTimeMs: Long) {
+            val modTime = Instant.ofEpochMilli(modTimeMs)
+            pastSolutionsSubmenu.add(
                 Menu.NONE,
                 SOLUTION_MENU_ITEM_ID,
                 Menu.CATEGORY_SECONDARY,
-                name
+                "$name\n${modTime.toString()}"
             )
         }
-        solutionsSubmenu.removeGroup(Menu.NONE)
-        Log.d(TAG, "UPDATESOLUTION2")
+        pastSolutionsSubmenu.removeGroup(Menu.NONE)
         val pastSolutions = SolutionSet.getSingleton(getSolutionDir(this))
-        Log.d(TAG, "UPDATESOLUTION3")
         for (e in pastSolutions.refresh()) {
-            addSolutionMenuItem(e.solution!!.imageName)
+            addSolutionMenuItem(e.solution!!.imageName, e.modTime)
         }
-        Log.d(TAG, "UPDATESOLUTION4")
     }
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
