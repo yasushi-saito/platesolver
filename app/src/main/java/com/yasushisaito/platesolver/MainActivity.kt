@@ -6,7 +6,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
 import android.view.MenuItem
+import android.view.SubMenu
 import android.view.View
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -40,7 +42,12 @@ fun inputStreamDigest(stream: InputStream): String {
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     companion object {
         const val TAG = "MainActivity"
+        const val SOLUTION_SUBMENU_ITEM_ID: Int = 0x4444454
+        const val SOLUTION_MENU_ITEM_ID: Int = 0x4444455
     }
+
+    private lateinit var drawerMenuView: NavigationView
+    private lateinit var solutionsSubmenu: SubMenu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,8 +66,11 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer.addDrawerListener(toggle)
         toggle.syncState()
 
-        val navigationView = findViewById<View>(R.id.nav_view) as NavigationView
-        navigationView.setNavigationItemSelectedListener(this)
+        drawerMenuView = findViewById<NavigationView>(R.id.nav_view)
+        drawerMenuView.setNavigationItemSelectedListener(this)
+        solutionsSubmenu = drawerMenuView.menu.addSubMenu("Results")
+
+        updateSolutionMenuItems()
 
         val fragment = when {
             isStarDbInstalled(this, STARDB_ANY) -> {
@@ -88,6 +98,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             Log.d(TAG, "successfully set $astapCliPath executable")
         }.start()
+    }
+
+    private fun updateSolutionMenuItems() {
+        Log.d(TAG, "UPDATESOLUTION")
+        val addSolutionMenuItem = fun(name: String) {
+            solutionsSubmenu.add(
+                Menu.NONE,
+                SOLUTION_MENU_ITEM_ID,
+                Menu.CATEGORY_SECONDARY,
+                name
+            )
+        }
+        solutionsSubmenu.removeGroup(Menu.NONE)
+        Log.d(TAG, "UPDATESOLUTION2")
+        val pastSolutions = SolutionSet.getSingleton(getSolutionDir(this))
+        Log.d(TAG, "UPDATESOLUTION3")
+        for (e in pastSolutions.refresh()) {
+            addSolutionMenuItem(e.solution!!.imageName)
+        }
+        Log.d(TAG, "UPDATESOLUTION4")
     }
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
@@ -144,7 +174,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         val fragment: Fragment = when (val id: Int = item.itemId) {
-            R.id.nav_result -> ResultFragment()
+            /*R.id.nav_result -> ResultFragment()*/
             R.id.nav_run_astap -> RunAstapFragment()
             R.id.nav_settings -> SettingsFragment()
             else -> throw Exception("Invalid menu item: $id")

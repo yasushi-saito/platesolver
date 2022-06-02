@@ -8,9 +8,6 @@
             android:id="@+id/nav_run_astap"
             android:title="Run platesolver" />
         <item
-            android:id="@+id/nav_result"
-            android:title="Result" />
-        <item
             android:id="@+id/nav_settings"
             android:title="Settings" />
     </group>
