@@ -61,7 +61,6 @@ class AstapRunnerDialogFragment(
     fun setMessage(message: String) {
         messageView?.let {
             it.text = message
-            it.setTextColor(Color.BLACK)
         }
         lastMessage = message
     }

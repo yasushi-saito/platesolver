@@ -1,6 +1,7 @@
 package com.yasushisaito.platesolver
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import java.io.*
@@ -30,6 +31,27 @@ private fun replaceExt(path: File, ext: String): File {
     return File(basename.parentFile, basename.name + ext)
 }
 
+// Checks if this machine is likely an Android emulator.
+// https://stackoverflow.com/questions/2799097/how-can-i-detect-when-an-android-application-is-running-in-the-emulator
+private fun isEmulator(): Boolean {
+    return (Build.BRAND.startsWith("generic") && Build.DEVICE.startsWith("generic"))
+        || Build.FINGERPRINT.startsWith("generic")
+        || Build.FINGERPRINT.startsWith("unknown")
+        || Build.HARDWARE.contains("goldfish")
+        || Build.HARDWARE.contains("ranchu")
+        || Build.MODEL.contains("google_sdk")
+        || Build.MODEL.contains("Emulator")
+        || Build.MODEL.contains("Android SDK built for x86")
+        || Build.MANUFACTURER.contains("Genymotion")
+        || Build.PRODUCT.contains("sdk_google")
+        || Build.PRODUCT.contains("google_sdk")
+        || Build.PRODUCT.contains("sdk")
+        || Build.PRODUCT.contains("sdk_x86")
+        || Build.PRODUCT.contains("sdk_gphone64_arm64")
+        || Build.PRODUCT.contains("vbox86p")
+        || Build.PRODUCT.contains("emulator")
+        || Build.PRODUCT.contains("simulator")
+}
 // Helper for running astap in a separate process.
 // Thread safe.
 class AstapRunner(
@@ -64,81 +86,90 @@ class AstapRunner(
         val wcsPath = replaceExt(imagePath, ".wcs")
         wcsPath.delete() // delete an old result file if any
         val result = runAstap(solverParams)
+        Log.d(TAG, "astap stdout: " + String(result.stdout))
+        Log.d(TAG, "astap stderr: " + String(result.stderr))
         if (!wcsPath.exists()) {
             if (result.exitCode != 0) return result
             return Result(
-                error="astap finished successfully, but it did not create file $wcsPath",
-                exitCode=0,
-                stdout= byteArrayOf(),
-                stderr=byteArrayOf())
+                error = "astap finished successfully, but it did not create file $wcsPath",
+                exitCode = 0,
+                stdout = byteArrayOf(),
+                stderr = byteArrayOf()
+            )
         }
         try {
-        FileInputStream(wcsPath).use { wcsStream ->
-            val wcs = AstapResultReader(wcsStream)
+            FileInputStream(wcsPath).use { wcsStream ->
+                val wcs = AstapResultReader(wcsStream)
 
-            // Reference pixel coordinate.
-            // Typically the middle of the image
-            val refPixel =
-                PixelCoordinate(wcs.getDouble(AstapResultReader.CRPIX1), wcs.getDouble(AstapResultReader.CRPIX2))
-            // The corresponding celestial coordinate
-            val refCel =
-                CelestialCoordinate(wcs.getDouble(AstapResultReader.CRVAL1), wcs.getDouble(AstapResultReader.CRVAL2))
-            val dim = ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
-            val pixelToWcsMatrix = Matrix22(
-                wcs.getDouble(AstapResultReader.CD1_1), wcs.getDouble(AstapResultReader.CD1_2),
-                wcs.getDouble(AstapResultReader.CD2_1), wcs.getDouble(AstapResultReader.CD2_2)
-            )
-            val wcsToPixelMatrix = pixelToWcsMatrix.invert()
+                // Reference pixel coordinate.
+                // Typically the middle of the image
+                val refPixel =
+                    PixelCoordinate(
+                        wcs.getDouble(AstapResultReader.CRPIX1),
+                        wcs.getDouble(AstapResultReader.CRPIX2)
+                    )
+                // The corresponding celestial coordinate
+                val refCel =
+                    CelestialCoordinate(
+                        wcs.getDouble(AstapResultReader.CRVAL1),
+                        wcs.getDouble(AstapResultReader.CRVAL2)
+                    )
+                val dim = ImageDimension((refPixel.x * 2).toInt(), (refPixel.y * 2).toInt())
+                val pixelToWcsMatrix = Matrix22(
+                    wcs.getDouble(AstapResultReader.CD1_1), wcs.getDouble(AstapResultReader.CD1_2),
+                    wcs.getDouble(AstapResultReader.CD2_1), wcs.getDouble(AstapResultReader.CD2_2)
+                )
+                val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 
-            var minRa = Double.MAX_VALUE
-            var maxRa = -Double.MAX_VALUE
-            var minDec = Double.MAX_VALUE
-            var maxDec = -Double.MAX_VALUE
+                var minRa = Double.MAX_VALUE
+                var maxRa = -Double.MAX_VALUE
+                var minDec = Double.MAX_VALUE
+                var maxDec = -Double.MAX_VALUE
 
-            val updateRange = fun(px: PixelCoordinate) {
-                val cel = convertPixelToCelestial(px, dim, refPixel, refCel, pixelToWcsMatrix)
-                if (minRa > cel.ra) minRa = cel.ra
-                if (maxRa < cel.ra) maxRa = cel.ra
-                if (minDec > cel.dec) minDec = cel.dec
-                if (maxDec < cel.dec) maxDec = cel.dec
+                val updateRange = fun(px: PixelCoordinate) {
+                    val cel = convertPixelToCelestial(px, dim, refPixel, refCel, pixelToWcsMatrix)
+                    if (minRa > cel.ra) minRa = cel.ra
+                    if (maxRa < cel.ra) maxRa = cel.ra
+                    if (minDec > cel.dec) minDec = cel.dec
+                    if (maxDec < cel.dec) maxDec = cel.dec
+                }
+                updateRange(PixelCoordinate(0.0, 0.0))
+                updateRange(PixelCoordinate(0.0, dim.height.toDouble()))
+                updateRange(PixelCoordinate(dim.width.toDouble(), 0.0))
+                updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
+
+                val allMatchedStars =
+                    WellKnownDsoSet.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
+                val validMatchedStars = ArrayList<WellKnownDso>()
+                // Since the image rectangle may not be aligned with the wcs coordinate system,
+                // findInRange will report stars outside the image rectangle. Remove them.
+                for (m in allMatchedStars) {
+                    val px =
+                        convertCelestialToPixel(m.cel, dim, refPixel, refCel, wcsToPixelMatrix)
+                    if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
+                    validMatchedStars.add(m)
+                }
+
+                val solution = Solution(
+                    version = Solution.CURRENT_VERSION,
+                    params = solverParams,
+                    refPixel = refPixel,
+                    refWcs = refCel,
+                    imageDimension = dim,
+                    imageName = imageName,
+                    pixelToWcsMatrix = pixelToWcsMatrix,
+                    matchedStars = validMatchedStars
+                )
+                val js = Gson().toJson(solution)
+                Log.d(TAG, "writing result to $solutionJsonPath")
+                writeFileAtomic(solutionJsonPath, js.toByteArray())
+                return result
             }
-            updateRange(PixelCoordinate(0.0, 0.0))
-            updateRange(PixelCoordinate(0.0, dim.height.toDouble()))
-            updateRange(PixelCoordinate(dim.width.toDouble(), 0.0))
-            updateRange(PixelCoordinate(dim.width.toDouble(), dim.height.toDouble()))
-
-            val allMatchedStars =
-                WellKnownDsoSet.getSingleton()!!.findInRange(minRa, minDec, maxRa, maxDec)
-            val validMatchedStars = ArrayList<WellKnownDso>()
-            // Since the image rectangle may not be aligned with the wcs coordinate system,
-            // findInRange will report stars outside the image rectangle. Remove them.
-            for (m in allMatchedStars) {
-                val px =
-                    convertCelestialToPixel(m.cel, dim, refPixel, refCel, wcsToPixelMatrix)
-                if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
-                validMatchedStars.add(m)
-            }
-
-            val solution = Solution(
-                version = Solution.CURRENT_VERSION,
-                params = solverParams,
-                refPixel = refPixel,
-                refWcs = refCel,
-                imageDimension = dim,
-                imageName = imageName,
-                pixelToWcsMatrix = pixelToWcsMatrix,
-                matchedStars = validMatchedStars
-            )
-            val js = Gson().toJson(solution)
-            Log.d(TAG, "writing result to $solutionJsonPath")
-            writeFileAtomic(solutionJsonPath, js.toByteArray())
-            return result
-        }
         } catch (ex: Exception) {
             return Result(
-                error="RunAstap failed with exception $ex",
-                exitCode=0,
-                stdout =  byteArrayOf(),
+                error = "RunAstap failed with exception $ex",
+                exitCode = 0,
+                stdout = byteArrayOf(),
                 stderr = byteArrayOf()
             )
         }
@@ -159,15 +190,21 @@ class AstapRunner(
     }
 
     private fun runAstap(solverParams: SolverParameters): Result {
-        val imagePath = File(solverParams.imagePath)
+        val astapPath = getAstapCliPath(context)
         val cmdline = arrayListOf(
-            getAstapCliPath(context).path,
+            astapPath.absolutePath,
             "-f", solverParams.imagePath,
             "-d", getStarDbDir(context, STARDB_DEFAULT).path,
             "-fov", solverParams.fovDeg.toString(),
-            //"-ra", "18.05",
-            //"-spd", "68"
         )
+
+        if (!isEmulator()) {
+            // Running astap_cli directly fails with "file not found".
+            // We need to start the binary explicitly using the dynamic linker.
+            //
+            // TODO(saito) figure out why. Maybe the binary is compiled wrong?
+            cmdline.add(0, "/system/bin/linker64")
+        }
         if (solverParams.startSearch != null) {
             cmdline.add("-ra")
             cmdline.add("%f".format(solverParams.startSearch.ra))
@@ -180,16 +217,19 @@ class AstapRunner(
         procMu.withLock {
             if (aborted) {
                 return@runAstap Result(
-                    error="",
-                    exitCode=143, // emulate SIGTERM
-                    stdout= byteArrayOf(),
-                    stderr= byteArrayOf()
+                    error = "",
+                    exitCode = 143, // emulate SIGTERM
+                    stdout = byteArrayOf(),
+                    stderr = byteArrayOf()
                 )
             }
-            proc = Runtime.getRuntime().exec(cmdlineArray, null, imagePath.parentFile)
+            proc = ProcessBuilder()
+                .command(cmdline)
+                .directory(astapPath.parentFile)
+                .start()
         }
 
-        val readOutputs = fun(stream: InputStream, out: OutputStream) : Thread {
+        val readOutputs = fun(stream: InputStream, out: OutputStream): Thread {
             val thread = Thread {
                 val buf = ByteArray(8192)
                 try {
@@ -220,10 +260,11 @@ class AstapRunner(
             proc = null
         }
         return Result(
-            error="",
-            exitCode=exitCode,
-            stdout=stdoutBuf.toByteArray(),
-            stderr=stderrBuf.toByteArray())
+            error = "",
+            exitCode = exitCode,
+            stdout = stdoutBuf.toByteArray(),
+            stderr = stderrBuf.toByteArray()
+        )
     }
 }
 

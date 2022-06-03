@@ -7,6 +7,7 @@ import kotlin.concurrent.withLock
 
 class SolutionSet(private val solutionDir: File) {
     companion object {
+        private val TAG = "SolutionSet"
         private val singletonMu = ReentrantLock()
         private var singleton: SolutionSet? = null
         private var singletonSolutionDir: File? = null

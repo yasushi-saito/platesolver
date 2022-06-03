@@ -331,7 +331,12 @@ class RunAstapFragment : Fragment() {
                 sendMessage(EVENT_MESSAGE, "running Astap...")
                 val result = astapRunner!!.run()
                 when {
-                    result.error != "" -> sendMessage(EVENT_ERROR_MESSAGE, result.error)
+                    result.error != "" -> {
+                        sendMessage(
+                            EVENT_ERROR_MESSAGE,
+                            result.error
+                        )
+                    }
                     result.exitCode == 0 -> sendMessage(
                         EVENT_MESSAGE,
                         "Astap finished successfully"
@@ -353,7 +358,9 @@ class RunAstapFragment : Fragment() {
                     throw Exception("could not build solution")
                 }
             } catch (ex: Exception) {
-                Log.d(TAG, "Could not run astap_cli: $ex")
+                val message = "Could not run astap_cli: $ex"
+                sendMessage(EVENT_ERROR_MESSAGE, message)
+                Log.d(TAG, message)
             } finally {
                 sendMessage(EVENT_SUSPEND_DIALOG, "")
             }

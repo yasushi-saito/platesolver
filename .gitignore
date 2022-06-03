@@ -14,3 +14,4 @@
 .cxx
 local.properties
 .csearchindex
+app/src/main/jniLibs

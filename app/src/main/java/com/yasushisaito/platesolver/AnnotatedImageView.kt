@@ -227,6 +227,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private var labelPlacements = ArrayList<LabelPlacement>()
 
     companion object {
+        const val TAG = "AnnotatedImageView"
         private const val MIN_ZOOM = 0.1f
         private const val MAX_ZOOM = 10f
     }

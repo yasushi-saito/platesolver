@@ -6,11 +6,11 @@ import java.io.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-const val TAG = "WellKnownDso"
-
+// Log tag.
+private const val TAG = "WellKnownDso"
 
 // Max number of DSOs to return in findInRange.
-const val MAX_HITS = 100
+private const val MAX_HITS = 100
 
 // Represents a well known deep sky object.
 data class WellKnownDso(

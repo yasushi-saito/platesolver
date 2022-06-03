@@ -1,3 +1,7 @@
 Select stars vs nonstars
 
-Selecting "Result" in the nav bar causes a crash.
+After astap finishes successfully, the dialog is in "Suspended" state.
+
+When the user Aborts astap, its reason isn't shown properly.
+
+With the dark theme, the ra/dec at the corners are invisible.

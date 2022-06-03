@@ -53,8 +53,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "platesolver started")
         setContentView(R.layout.activity_main)
-
         val toolbar = findViewById<View>(R.id.toolbar) as Toolbar
         setSupportActionBar(toolbar)
         val drawer = findViewById<View>(R.id.layout_drawer) as DrawerLayout
@@ -88,18 +88,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
 
-        Thread {
-            val astapCliPath = getAstapCliPath(this)
-            assets.open("astap_cli").use { inputStream ->
-                FileOutputStream(astapCliPath).use { outputStream ->
-                    inputStream.copyTo(outputStream)
+        // https://docs.microsoft.com/en-us/answers/questions/369506/android-problem-starting-the-program-from-the-shel.html
+        if (false) {
+            Thread {
+                val astapCliPath = getAstapCliPath(this)
+                assets.open("astap_cli").use { inputStream ->
+                    FileOutputStream(astapCliPath).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
                 }
-            }
-            if (!astapCliPath.setExecutable(true)) {
-                throw Exception("cannot set $astapCliPath executable")
-            }
-            Log.d(TAG, "successfully set $astapCliPath executable")
-        }.start()
+                if (!astapCliPath.exists()) {
+                    throw Exception("could not copy $astapCliPath executable")
+                }
+                if (!astapCliPath.setExecutable(true)) {
+                    throw Exception("cannot set $astapCliPath executable")
+                }
+                Log.d(TAG, "successfully set $astapCliPath executable")
+            }.start()
+        }
+        Log.d(TAG, "platesolver finished starting")
     }
 
     private fun updateSolutionMenuItems() {
