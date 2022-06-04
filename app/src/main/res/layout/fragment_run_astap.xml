@@ -25,7 +25,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="64dp"
-        android:text="Pick File"
+        android:text="Pick file"
+        style="@style/Theme.PlateSolver"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -70,6 +71,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/label_setup_fov"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -104,6 +106,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="48dp"
         android:text="Run"
+        style="@style/Theme.PlateSolver"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -134,6 +137,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/textView8"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

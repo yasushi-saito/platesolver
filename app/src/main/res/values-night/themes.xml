@@ -1,6 +1,9 @@
-<resources>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Base application theme. -->
     <style name="Theme.PlateSolver" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:textColor">@color/white</item>
+        <item name="textColor">@color/white</item>
+
         <!-- Primary brand color. -->
         <!--
         <item name="colorPrimary">@color/purple_200</item>
@@ -13,5 +16,9 @@
         <item name="colorOnSecondary">@color/black</item> -->
         <!-- Status bar color. -->
         <!-- Customize your theme here. -->
+    </style>
+
+    <style name="HeaderText" parent="android:Widget.TextView">
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

@@ -87,25 +87,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         ft.commit()
 
         WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
-
-        // https://docs.microsoft.com/en-us/answers/questions/369506/android-problem-starting-the-program-from-the-shel.html
-        if (false) {
-            Thread {
-                val astapCliPath = getAstapCliPath(this)
-                assets.open("astap_cli").use { inputStream ->
-                    FileOutputStream(astapCliPath).use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                    }
-                }
-                if (!astapCliPath.exists()) {
-                    throw Exception("could not copy $astapCliPath executable")
-                }
-                if (!astapCliPath.setExecutable(true)) {
-                    throw Exception("cannot set $astapCliPath executable")
-                }
-                Log.d(TAG, "successfully set $astapCliPath executable")
-            }.start()
-        }
         Log.d(TAG, "platesolver finished starting")
     }
 

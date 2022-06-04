@@ -7,4 +7,13 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="red">#FFFF0000</color>
+
+    <!-- used by texts and lines to mark star / dso locations on an image
+         This color doesn't depend on themes, since images are always near black
+
+         https://stackoverflow.com/questions/9469174/set-theme-for-a-fragment
+         -->
+    <color name="imageAnnotationColor">#FFB0E0E0</color>
+
 </resources>

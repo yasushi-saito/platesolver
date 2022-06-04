@@ -24,32 +24,32 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/label_image"
         android:layout_width="0dp"
         android:layout_height="19dp"
         android:layout_marginTop="24dp"
         android:text="Image"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         app:layout_constraintTop_toTopOf="parent"
         tools:text="Image" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/label_imagedimension"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:text="Dimension"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1"
         app:layout_constraintTop_toBottomOf="@+id/label_image" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/label_lastupdate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Last update"
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1"
         app:layout_constraintTop_toBottomOf="@+id/label_imagedimension" />
@@ -69,12 +69,12 @@
         app:layout_constraintGuide_begin="16dp" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/label_fov"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Field of view (deg)"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         app:layout_constraintTop_toBottomOf="@+id/label_lastupdate" />
 
@@ -110,12 +110,12 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/label_corners2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Show matched objects"
-        android:textStyle="bold"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         app:layout_constraintTop_toBottomOf="@+id/label_fov" />
 

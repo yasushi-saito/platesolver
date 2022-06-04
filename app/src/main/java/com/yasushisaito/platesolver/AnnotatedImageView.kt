@@ -240,6 +240,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     // Value is in range [0, 1]
     private var matchedStarsDisplayFraction = 1.0
 
+    // Color of the text to be used when drawing outside the image's frame.
+    private var offImageTextColor = getColorInTheme(context, R.attr.textColor)
+    private var textSize = 40f
+
     fun setSolution(s: Solution) {
         solution = s
         imageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
@@ -265,9 +269,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.save() // save() and restore() are used to reset canvas data after each draw
-        // Set the canvas origin to the center of the screen only on the first time onDraw is called
-        //  (otherwise it'll break the panning code)
-        paint.textSize = 32f / scaleFactor
+        paint.color = offImageTextColor
+        paint.textSize = textSize / scaleFactor
 
         val canvasDim = CanvasDimension(width, height)
         if (labelPlacements.isEmpty()) { // The first call, or the scaleFactor changed.
@@ -301,24 +304,15 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             paint
         )
 
-        paint.color = Color.parseColor("#00e0e0")
+        paint.color = context.getColor(R.color.imageAnnotationColor)
         val nStarsToShow =
             Math.ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
         for (i in 0 until nStarsToShow) {
             val e = solution.matchedStars[i]
             val placement = labelPlacements[i]
 
-            val px = solution.celestialToPixel(e.cel)
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 4f / scaleFactor
-            if (false) {
-                canvas.drawCircle(
-                    placement.circle.centerX.toFloat(),
-                    placement.circle.centerY.toFloat(),
-                    placement.circle.radius.toFloat(),
-                    paint
-                )
-            }
             canvas.drawLine(
                 placement.circle.centerX.toFloat(),
                 placement.circle.centerY.toFloat(),
@@ -336,8 +330,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             )
         }
 
-        paint.color = Color.parseColor("#000000")
-        paint.textSize = 40f / scaleFactor
+        paint.color = offImageTextColor
         drawCelestialCoordinate(
             PixelCoordinate(0.0, 0.0),
             -20f, -20f,

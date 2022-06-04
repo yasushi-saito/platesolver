@@ -12,11 +12,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:extractNativeLibs="true"
+        android:theme="@style/Theme.PlateSolver"
         >
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.PlateSolver"
             >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
