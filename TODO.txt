@@ -3,5 +3,3 @@ Select stars vs nonstars
 After astap finishes successfully, the dialog is in "Suspended" state.
 
 When the user Aborts astap, its reason isn't shown properly.
-
-With the dark theme, the ra/dec at the corners are invisible.

@@ -199,7 +199,7 @@ class RunAstapFragment : Fragment() {
                 Log.d(TAG, "searchStartEdit selected $startSearch")
                 if (startSearch == null) {
                     searchStartEdit.setText("")
-                    searchStartRaDecView.text = "Auto"
+                    searchStartRaDecView.text = ""
                 } else {
                     searchStartRaDecView.text = startSearch!!.cel.toDisplayString()
                 }
@@ -252,6 +252,7 @@ class RunAstapFragment : Fragment() {
                 dialog?.show(childFragmentManager, null)
             }
             EVENT_SUSPEND_DIALOG -> {
+                dialog?.setError(msg.obj as String)
                 dialog?.suspend()
             }
             else -> throw Exception("Invalid message $msg")
@@ -306,12 +307,14 @@ class RunAstapFragment : Fragment() {
                 File(getSolutionDir(activity), "${solverParams.hashString()}.json")
 
             // Try reading the json file. Note that readSolution will raise exception on any error
-            try {
-                readSolution(solutionJsonPath)
-                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
-                return@Runnable
-            } catch (ex: Exception) {
-                Log.d(TAG, "Could not read $solutionJsonPath: $ex; Running astap")
+            if (true) {
+                try {
+                    readSolution(solutionJsonPath)
+                    sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
+                    return@Runnable
+                } catch (ex: Exception) {
+                    Log.d(TAG, "Could not read $solutionJsonPath: $ex; Running astap")
+                }
             }
             try {
                 sendMessage(EVENT_MESSAGE, "Running astap...")
@@ -356,14 +359,14 @@ class RunAstapFragment : Fragment() {
                     }
                 }
                 if (!solutionJsonPath.exists()) {
+                    // This shouldn't happen
                     throw Exception("could not build solution")
                 }
+                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
             } catch (ex: Exception) {
                 val message = "Could not run astap_cli: $ex"
-                sendMessage(EVENT_ERROR_MESSAGE, message)
+                sendMessage(EVENT_SUSPEND_DIALOG,  message)
                 Log.d(TAG, message)
-            } finally {
-                sendMessage(EVENT_SUSPEND_DIALOG, "")
             }
         }).start()
     }
