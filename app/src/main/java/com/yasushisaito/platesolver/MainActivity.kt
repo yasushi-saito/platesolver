@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawerMenuView.setNavigationItemSelectedListener(this)
         pastSolutionsSubmenu = drawerMenuView.menu.addSubMenu("Past Solutions")
         solutionSet = SolutionSet.getSingleton(getSolutionDir(this))
-        updateSolutionMenuItems()
+        refreshSolutionMenuItems()
 
         val fragment = when {
             isStarDbInstalled(this, STARDB_ANY) -> {
@@ -90,7 +90,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         Log.d(TAG, "platesolver finished starting")
     }
 
-    private fun updateSolutionMenuItems() {
+    fun refreshSolutionMenuItems() {
         val addSolutionMenuItem = fun(e: SolutionSet.Entry) {
             val modTime = Instant.ofEpochMilli(e.modTime)
             val text: String ="${e.solution!!.imageName}\n${modTime.toString()}"
@@ -102,9 +102,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
         }
         pastSolutionsSubmenu.removeGroup(Menu.NONE)
-        for (e in solutionSet.refresh()) {
-            addSolutionMenuItem(e)
-        }
+        Thread() {
+            val entries = solutionSet.refresh()
+            runOnUiThread() {
+                for (e in entries) {
+                    addSolutionMenuItem(e)
+                }
+            }
+        }.start()
     }
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {

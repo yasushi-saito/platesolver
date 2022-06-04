@@ -242,6 +242,8 @@ class RunAstapFragment : Fragment() {
             }
             EVENT_SHOW_SOLUTION -> {
                 dialog = null
+                val activity = requireActivity() as? MainActivity
+                activity!!.refreshSolutionMenuItems()
                 startSolutionFragment(msg.obj as String)
             }
             EVENT_WELLKNOWNDSO_LOADED -> {

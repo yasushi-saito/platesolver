@@ -15,7 +15,7 @@
         android:layout_marginStart="8dp"
         android:maxLines="2"
         android:minLines="2"
-        android:text="Auto"
+        android:text=""
         app:layout_constraintBaseline_toBaselineOf="@+id/autocomplete_astap_searchstart"
         app:layout_constraintStart_toEndOf="@+id/autocomplete_astap_searchstart" />
 
