@@ -2,4 +2,9 @@
     <string name="app_name">Platesolver</string>
     <string name="nav_open_drawer">Open navigation drawer</string>
     <string name="nav_close_drawer">Close navigation drawer</string>
+
+    <string name="cancel">Cancel</string>
+    <string name="settings_install_stardb">Install star DB (H17)</string>
+    <string name="settings_reinstall_stardb">Reinstall star DB (H17)</string>
+    <string name="settings_retry_install_stardb">Retry install star DB (H17)</string>
 </resources>
