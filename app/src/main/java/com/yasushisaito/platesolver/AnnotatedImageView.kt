@@ -225,12 +225,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     companion object {
         const val TAG = "AnnotatedImageView"
-        private const val MIN_ZOOM = 1f / 50f
-        private const val MAX_ZOOM = 50f
     }
 
-    private lateinit var solution: Solution
-    private lateinit var imageBitmap: Bitmap
+    private var optionalSolution: Solution? = null
+    private var optionalImageBitmap: Bitmap? = null
 
     // Fraction of solution.matchedStars that are shown.
     // Darker objects will be hidden with small fraction values.
@@ -246,9 +244,15 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     // Tmp used to get the scale factor from translationMatrix.
     private val tmpMatrixValues = FloatArray(9)
 
+    fun setImage(path: String) {
+        optionalImageBitmap = BitmapFactory.decodeFile(path)
+        invalidate()
+    }
+
     fun setSolution(s: Solution) {
-        solution = s
-        imageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
+        optionalImageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
+        optionalSolution = s
+        invalidate()
     }
 
     fun setMatchedStarsDisplayFraction(fraction: Double) {
@@ -262,6 +266,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        if (optionalImageBitmap == null) return
+        val imageBitmap = optionalImageBitmap!!
 
         // Get the scale (magnification) factor.
         // X and Y scales are the same, so it suffices to get the X scale factor.
@@ -273,16 +279,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         paint.textSize = textSize / scaleFactor
 
         val canvasDim = CanvasDimension(width, height)
-        if (labelPlacements.isEmpty()) { // The first call, or the scaleFactor changed.
-            labelPlacements = placeDsoLabels(
-                solution = solution,
-                canvasDim = canvasDim,
-                imageDim = solution.imageDimension,
-                paint = paint,
-                scaleFactor = scaleFactor
-            )
-            assert(labelPlacements.size == solution.matchedStars.size)
-        }
+        val imageDim = ImageDimension(imageBitmap.width, imageBitmap.height)
         canvas.concat(translationMatrix)
 
         //canvas.scale(scaleFactor, scaleFactor) // Scale the canvas according to scaleFactor
@@ -293,84 +290,99 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         // Preserve the aspect ratio of the original image.
         val canvasImageRect = pixelCoordToCanvasCoord(
             PixelCoordinate(
-                solution.imageDimension.width.toDouble(),
-                solution.imageDimension.height.toDouble()
+                imageBitmap.width.toDouble(),
+                imageBitmap.height.toDouble(),
+                //solution.imageDimension.width.toDouble(),
+                // solution.imageDimension.height.toDouble()
             ),
-            solution.imageDimension,
+            imageDim,
             canvasDim
         )
         canvas.drawBitmap(
             imageBitmap,
-            Rect(0, 0, solution.imageDimension.width, solution.imageDimension.height),
+            Rect(0, 0, imageBitmap.width, imageBitmap.height),
             RectF(0f, 0f, canvasImageRect.x.toFloat(), canvasImageRect.y.toFloat()),
             paint
         )
 
-        paint.color = context.getColor(R.color.imageAnnotationColor)
-        val nStarsToShow = ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
-        for (i in 0 until nStarsToShow) {
-            val e = solution.matchedStars[i]
-            val placement = labelPlacements[i]
+        optionalSolution?.let { solution ->
+            if (labelPlacements.isEmpty()) { // The first call, or the scaleFactor changed.
+                labelPlacements = placeDsoLabels(
+                    solution = optionalSolution!!,
+                    canvasDim = canvasDim,
+                    imageDim = ImageDimension(imageBitmap.width, imageBitmap.height),
+                    paint = paint,
+                    scaleFactor = scaleFactor
+                )
+                assert(labelPlacements.size == optionalSolution!!.matchedStars.size)
+            }
 
-            paint.style = Paint.Style.STROKE
-            paint.strokeWidth = 4f / scaleFactor
-            canvas.drawLine(
-                placement.circle.centerX.toFloat(),
-                placement.circle.centerY.toFloat(),
-                (placement.label.minX + placement.labelOffX).toFloat(),
-                (placement.label.minY + placement.labelOffY).toFloat(),
-                paint
+            paint.color = context.getColor(R.color.imageAnnotationColor)
+            val nStarsToShow = ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
+            for (i in 0 until nStarsToShow) {
+                val e = solution.matchedStars[i]
+                val placement = labelPlacements[i]
+
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 4f / scaleFactor
+                canvas.drawLine(
+                    placement.circle.centerX.toFloat(),
+                    placement.circle.centerY.toFloat(),
+                    (placement.label.minX + placement.labelOffX).toFloat(),
+                    (placement.label.minY + placement.labelOffY).toFloat(),
+                    paint
+                )
+
+                paint.style = Paint.Style.FILL
+                canvas.drawText(
+                    e.names[0],
+                    placement.label.minX.toFloat(),
+                    placement.label.maxY.toFloat(),
+                    paint
+                )
+            }
+
+            paint.color = offImageTextColor
+            drawCelestialCoordinate(
+                PixelCoordinate(0.0, 0.0),
+                -20f, -20f,
+                solution,
+                canvasDim,
+                scaleFactor,
+                paint,
+                canvas,
             )
-
-            paint.style = Paint.Style.FILL
-            canvas.drawText(
-                e.names[0],
-                placement.label.minX.toFloat(),
-                placement.label.maxY.toFloat(),
-                paint
+            drawCelestialCoordinate(
+                PixelCoordinate(solution.imageDimension.width.toDouble(), 0.0),
+                20f, -20f,
+                solution,
+                canvasDim,
+                scaleFactor,
+                paint,
+                canvas,
+            )
+            drawCelestialCoordinate(
+                PixelCoordinate(0.0, solution.imageDimension.height.toDouble()),
+                -20f, 20f,
+                solution,
+                canvasDim,
+                scaleFactor,
+                paint,
+                canvas,
+            )
+            drawCelestialCoordinate(
+                PixelCoordinate(
+                    solution.imageDimension.width.toDouble(),
+                    solution.imageDimension.height.toDouble()
+                ),
+                20f, 20f,
+                solution,
+                canvasDim,
+                scaleFactor,
+                paint,
+                canvas,
             )
         }
-
-        paint.color = offImageTextColor
-        drawCelestialCoordinate(
-            PixelCoordinate(0.0, 0.0),
-            -20f, -20f,
-            solution,
-            canvasDim,
-            scaleFactor,
-            paint,
-            canvas,
-        )
-        drawCelestialCoordinate(
-            PixelCoordinate(solution.imageDimension.width.toDouble(), 0.0),
-            20f, -20f,
-            solution,
-            canvasDim,
-            scaleFactor,
-            paint,
-            canvas,
-        )
-        drawCelestialCoordinate(
-            PixelCoordinate(0.0, solution.imageDimension.height.toDouble()),
-            -20f, 20f,
-            solution,
-            canvasDim,
-            scaleFactor,
-            paint,
-            canvas,
-        )
-        drawCelestialCoordinate(
-            PixelCoordinate(
-                solution.imageDimension.width.toDouble(),
-                solution.imageDimension.height.toDouble()
-            ),
-            20f, 20f,
-            solution,
-            canvasDim,
-            scaleFactor,
-            paint,
-            canvas,
-        )
         canvas.restore()
     }
 
@@ -437,7 +449,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
-            var newFactor = detector.scaleFactor
+            val newFactor = detector.scaleFactor
             translationMatrix.postScale(newFactor, newFactor, width / 2f, height / 2f)
             labelPlacements.clear()
             invalidate()

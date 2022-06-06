@@ -20,15 +20,14 @@
         app:layout_constraintStart_toEndOf="@+id/autocomplete_astap_searchstart" />
 
     <Button
-        android:id="@+id/astap_pick_file"
+        android:id="@+id/button_astap_pick_file"
+        style="@style/Theme.PlateSolver"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="64dp"
+        android:layout_marginBottom="8dp"
         android:text="Pick file"
-        style="@style/Theme.PlateSolver"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toTopOf="@+id/label_setup_fov"
+        app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline3"
@@ -71,14 +70,14 @@
         app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
     <TextView
-        style="@style/HeaderText"
         android:id="@+id/label_setup_fov"
+        style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:text="Field of view"
-        app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/astap_pick_file" />
+        app:layout_constraintBottom_toTopOf="@+id/label_setup_search_start"
+        app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
     <EditText
         android:id="@+id/text_astap_fov_deg"
@@ -101,14 +100,14 @@
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_lens" />
 
     <Button
-        android:id="@+id/setup_run"
+        android:id="@+id/button_astap_run"
+        style="@style/Theme.PlateSolver"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="48dp"
         android:text="Run"
-        style="@style/Theme.PlateSolver"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -117,8 +116,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:text="imagename"
-        app:layout_constraintBaseline_toBaselineOf="@+id/astap_pick_file"
-        app:layout_constraintStart_toEndOf="@+id/astap_pick_file" />
+        app:layout_constraintBaseline_toBaselineOf="@+id/button_astap_pick_file"
+        app:layout_constraintStart_toEndOf="@+id/button_astap_pick_file" />
 
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/barrier3"
@@ -133,18 +132,18 @@
         android:layout_height="wrap_content"
         android:imeOptions="actionNext"
         android:inputType="text"
-        app:layout_constraintBaseline_toBaselineOf="@+id/textView8"
+        app:layout_constraintBaseline_toBaselineOf="@+id/label_setup_search_start"
         app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
     <TextView
+        android:id="@+id/label_setup_search_start"
         style="@style/HeaderText"
-        android:id="@+id/textView8"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
         android:text="Search start"
-        app:layout_constraintStart_toStartOf="@+id/guideline3"
-        app:layout_constraintTop_toBottomOf="@+id/text_astap_fov_lens" />
+        app:layout_constraintBottom_toTopOf="@+id/button_astap_run"
+        app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline10"
@@ -152,5 +151,14 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         app:layout_constraintGuide_begin="313dp" />
+
+    <com.yasushisaito.platesolver.AnnotatedImageView
+        android:id="@+id/view_astap_image"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@+id/button_astap_pick_file"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

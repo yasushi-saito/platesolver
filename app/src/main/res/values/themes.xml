@@ -20,4 +20,6 @@
     <style name="HeaderText" parent="android:Widget.TextView">
         <item name="android:textStyle">bold</item>
     </style>
+    <style name="BodyText" parent="android:Widget.TextView">
+    </style>
 </resources>

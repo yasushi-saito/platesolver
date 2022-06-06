@@ -103,6 +103,7 @@ class RunAstapFragment : Fragment() {
     }
 
     private var thisView: View? = null
+    private lateinit var imageView: AnnotatedImageView
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -118,6 +119,7 @@ class RunAstapFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         thisView = view
+        imageView = view.findViewById(R.id.view_astap_image)
         fovDegEdit = view.findViewById(R.id.text_astap_fov_deg)
         fovLensEdit = view.findViewById(R.id.text_astap_fov_lens)
         searchStartEdit = view.findViewById(R.id.autocomplete_astap_searchstart)
@@ -150,14 +152,14 @@ class RunAstapFragment : Fragment() {
             }
             updateView()
         }
-        val pickFileButton = view.findViewById<Button>(R.id.astap_pick_file)
+        val pickFileButton = view.findViewById<Button>(R.id.button_astap_pick_file)
         pickFileButton.setOnClickListener {
             val intent = Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
             pickFileLauncher.launch(intent)
         }
-        runButton = view.findViewById(R.id.setup_run)
+        runButton = view.findViewById(R.id.button_astap_run)
         runButton.setOnClickListener {
             onRunAstap()
         }
@@ -223,7 +225,7 @@ class RunAstapFragment : Fragment() {
             imageNameText.text = ""
             setEditable(false)
         }
-        val runButton = view.findViewById<Button>(R.id.setup_run)
+        val runButton = view.findViewById<Button>(R.id.button_astap_run)
         runButton.isEnabled =
             isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoSet.getSingleton() != null
     }
