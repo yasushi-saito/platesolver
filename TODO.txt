@@ -1,5 +1,3 @@
 Select stars vs nonstars
 
-When the user Aborts astap, its reason isn't shown properly.
-
 The "astap running..." dialog has header fields unaligned.

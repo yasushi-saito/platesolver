@@ -7,8 +7,8 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
+import android.view.GestureDetector
 import android.view.MotionEvent
-import android.view.MotionEvent.*
 import android.view.ScaleGestureDetector
 import android.view.View
 import kotlin.math.ceil
@@ -211,26 +211,30 @@ private fun placeDsoLabels(
     return placements
 }
 
+// https://stackoverflow.com/questions/55257981/how-to-fix-pinch-zoom-focal-point-in-a-custom-view
 class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private val paint = Paint() // Paint object for coloring shapes
 
-    private var initX = 0f // See onTouchEvent
-    private var initY = 0f // See onTouchEvent
 
-    private var canvasX = 0f // x-coord of canvas (0,0)
-    private var canvasY = 0f // y-coord of canvas (0,0)
+    //private var lastX = 0f // See onTouchEvent
+    //private var lastY = 0f // See onTouchEvent
 
-    private var dragging = false // May be unnecessary
+    //private var canvasX = 0f // x-coord of canvas (0,0)
+    //private var canvasY = 0f // y-coord of canvas (0,0)
+
+    //private var dragging = false // May be unnecessary
 
     // Detector for scaling gestures (i.e. pinching or double tapping
-    private val detector = ScaleGestureDetector(context, ScaleListener())
-    private var scaleFactor = 1f // Zoom level (initial value is 1x)
+    private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
+    private val gestureDetector = GestureDetector(context, GestureListener())
+
+    // private var scaleFactor = 1f // Zoom level (initial value is 1x)
     private var labelPlacements = ArrayList<LabelPlacement>()
 
     companion object {
         const val TAG = "AnnotatedImageView"
-        private const val MIN_ZOOM = 0.1f
-        private const val MAX_ZOOM = 10f
+        private const val MIN_ZOOM = 1f / 50f
+        private const val MAX_ZOOM = 50f
     }
 
     private lateinit var solution: Solution
@@ -245,6 +249,11 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private var offImageTextColor = getColorInTheme(context, R.attr.textColor)
     private var textSize = 40f
 
+    private val translationMatrix = Matrix()
+
+    // Tmp used to get the scale factor from translationMatrix.
+    private val tmpMatrixValues = FloatArray(9)
+
     fun setSolution(s: Solution) {
         solution = s
         imageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
@@ -258,17 +267,15 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         }
     }
 
-    /*
-        private fun pixelCoordToCanvasCoord(p: PixelCoordinate): CanvasCoordinate {
-            return CanvasCoordinate(
-                p.x / solution.imageDimension.width * width,
-                p.y / solution.imageDimension.height * height
-            )
-        }
-    */
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+
+        // Get the scale (magnification) factor.
+        // X and Y scales are the same, so it suffices to get the X scale factor.
+        translationMatrix.getValues(tmpMatrixValues)
+        val scaleFactor = tmpMatrixValues[Matrix.MSCALE_X]
+
         canvas.save() // save() and restore() are used to reset canvas data after each draw
         paint.color = offImageTextColor
         paint.textSize = textSize / scaleFactor
@@ -284,10 +291,12 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             )
             assert(labelPlacements.size == solution.matchedStars.size)
         }
-        canvas.scale(scaleFactor, scaleFactor) // Scale the canvas according to scaleFactor
+        canvas.concat(translationMatrix)
+
+        //canvas.scale(scaleFactor, scaleFactor) // Scale the canvas according to scaleFactor
 
         // Just draw a bunch of circles (this is for testing panning and zooming
-        canvas.translate(canvasX, canvasY)
+        //canvas.translate(canvasX, canvasY)
 
         // Preserve the aspect ratio of the original image.
         val canvasImageRect = pixelCoordToCanvasCoord(
@@ -421,73 +430,62 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     //  really matter here.
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        /*
         // These two are the coordinates of the user's finger whenever onTouchEvent is called
         val x: Float = event.x
         val y: Float = event.y
 
-        //@TODO: HIGH PRIORITY
-        // - Prevent user from scrolling past ends of canvas
-
-        //@TODO: LOW PRIORITY
-        // - Add functionality such that initX and initY snap to the position of whichever
-        //    finger is up first, be it pointer or main (to prevent jumpiness)
-        // - Make sure that when the user zooms in or out the focal point is the midpoint of a line
-        //    connecting the main and pointer fingers
-
+        // https://www.c-sharpcorner.com/UploadFile/88b6e5/multi-touch-panning-pinch-zoom-image-view-in-android-using/
         when (event.action and ACTION_MASK) {
             ACTION_DOWN -> {
                 // Might not be necessary; check out later
                 dragging = true
                 // We want to store the coords of the user's finger as it is before they move
                 //  in order to calculate dx and dy
-                initX = event.x
-                initY = event.y
+                lastX = event.x
+                lastY = event.y
             }
             ACTION_MOVE -> {
-                // Self explanatory; the difference in x- and y-coords between successive calls to
-                //  onTouchEvent
-                val dx: Float = event.x - initX
-                val dy: Float = event.y - initY
 
                 if (dragging) {
                     // Move the canvas dx units right and dy units down
                     // dx and dy are divided by scaleFactor so that panning speeds are consistent
                     //  with the zoom level
-                    canvasX += dx / scaleFactor
-                    canvasY += dy / scaleFactor
-
-                    invalidate() // Re-draw the canvas
-
-                    // Change initX and initY to the new x- and y-coords
-                    initX = x
-                    initY = y
+                    canvasX += (event.x - lastX) / scaleFactor
+                    canvasY += (event.y - lastY) / scaleFactor
+                    lastX = x
+                    lastY = y
+                    invalidate()
                 }
             }
             ACTION_POINTER_UP -> {
                 // This sets initX and initY to the position of the pointer finger so that the
                 //  screen doesn't jump when it's lifted with the main finger still down
-                initX = x
-                initY = y
+                lastX = x
+                lastY = y
             }
             ACTION_UP -> dragging = false // Again, may be unnecessary
         }
-
-        detector.onTouchEvent(event) // Listen for scale gestures (i.e. pinching or double tap+drag
+*/
+        gestureDetector.onTouchEvent(event)
+        scaleDetector.onTouchEvent(event)
         return true
+    }
+
+    private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        override fun onScroll(e0: MotionEvent, e1: MotionEvent, dX: Float, dY: Float): Boolean {
+            translationMatrix.postTranslate(-dX, -dY)
+            invalidate()
+            return true
+        }
     }
 
     private inner class ScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
-            var newScaleFactor = scaleFactor * detector.scaleFactor
-            // If scaleFactor is less than 0.5x, default to 0.5x as a minimum. Likewise, if
-            //  scaleFactor is greater than 10x, default to 10x zoom as a maximum.
-            newScaleFactor = MIN_ZOOM.coerceAtLeast(newScaleFactor.coerceAtMost(MAX_ZOOM))
-
-            if (newScaleFactor != scaleFactor) {
-                scaleFactor = newScaleFactor
-                labelPlacements.clear()
-                invalidate()
-            }
+            var newFactor = detector.scaleFactor
+            translationMatrix.postScale(newFactor, newFactor, width / 2f, height / 2f)
+            labelPlacements.clear()
+            invalidate()
             return true
         }
     }
