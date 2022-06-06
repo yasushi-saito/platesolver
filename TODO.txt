@@ -1,7 +1,5 @@
 Select stars vs nonstars
 
-After astap finishes successfully, the dialog is in "Suspended" state.
-
 When the user Aborts astap, its reason isn't shown properly.
 
 The "astap running..." dialog has header fields unaligned.
