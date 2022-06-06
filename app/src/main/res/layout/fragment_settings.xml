@@ -10,7 +10,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:onClick="onInstallStarDb"
-        android:text="Download Star DB (h17)"
+        android:text="@string/settings_install_stardb"
         style="@style/Theme.PlateSolver"
         app:layout_constraintStart_toStartOf="@+id/guideline11"
         app:layout_constraintTop_toTopOf="parent" />

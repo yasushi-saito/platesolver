@@ -11,6 +11,7 @@ import android.view.MotionEvent
 import android.view.MotionEvent.*
 import android.view.ScaleGestureDetector
 import android.view.View
+import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -250,7 +251,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     }
 
     fun setMatchedStarsDisplayFraction(fraction: Double) {
-        assert(fraction >= 0.0 && fraction <= 1.0, { Log.e(TAG, "Bad fraction $fraction") })
+        assert(fraction >= 0.0 && fraction <= 1.0) { Log.e(TAG, "Bad fraction $fraction") }
         if (fraction != matchedStarsDisplayFraction) {
             matchedStarsDisplayFraction = fraction
             invalidate()
@@ -305,8 +306,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         )
 
         paint.color = context.getColor(R.color.imageAnnotationColor)
-        val nStarsToShow =
-            Math.ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
+        val nStarsToShow = ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
         for (i in 0 until nStarsToShow) {
             val e = solution.matchedStars[i]
             val placement = labelPlacements[i]

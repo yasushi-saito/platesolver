@@ -1,7 +1,6 @@
 package com.yasushisaito.platesolver
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
@@ -15,9 +14,9 @@ private const val TAG = "File"
 // https://issuetracker.google.com/issues/152645643
 // https://stackoverflow.com/questions/64786837/what-path-to-put-executable-to-run-on-android-29
 fun getAstapCliPath(context: Context): File {
-    var dir = File(context.applicationInfo.nativeLibraryDir)
-    var path = File(dir, "libastapcli.so")
-    assert(path.exists(), { Log.e(TAG, "astap executable $path does not exist") })
+    val dir = File(context.applicationInfo.nativeLibraryDir)
+    val path = File(dir, "libastapcli.so")
+    assert(path.exists()) { Log.e(TAG, "astap executable $path does not exist") }
     return path
 }
 

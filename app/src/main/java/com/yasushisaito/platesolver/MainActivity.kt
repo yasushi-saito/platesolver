@@ -21,7 +21,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationView
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.security.MessageDigest
 import java.time.Instant
@@ -43,7 +42,6 @@ fun inputStreamDigest(stream: InputStream): String {
 class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
     companion object {
         const val TAG = "MainActivity"
-        const val SOLUTION_SUBMENU_ITEM_ID: Int = 0x4444454
         const val SOLUTION_MENU_ITEM_ID: Int = 0x4444455
     }
 
@@ -68,7 +66,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         drawer.addDrawerListener(toggle)
         toggle.syncState()
 
-        drawerMenuView = findViewById<NavigationView>(R.id.nav_view)
+        drawerMenuView = findViewById(R.id.nav_view)
         drawerMenuView.setNavigationItemSelectedListener(this)
         pastSolutionsSubmenu = drawerMenuView.menu.addSubMenu("Past Solutions")
         solutionSet = SolutionSet.getSingleton(getSolutionDir(this))
@@ -93,7 +91,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     fun refreshSolutionMenuItems() {
         val addSolutionMenuItem = fun(e: SolutionSet.Entry) {
             val modTime = Instant.ofEpochMilli(e.modTime)
-            val text: String ="${e.solution!!.imageName}\n${modTime.toString()}"
+            val text ="${e.solution!!.imageName}\n${modTime}"
             pastSolutionsSubmenu.add(
                 Menu.NONE,
                 SOLUTION_MENU_ITEM_ID + e.id,
@@ -102,9 +100,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
         }
         pastSolutionsSubmenu.removeGroup(Menu.NONE)
-        Thread() {
+        Thread {
             val entries = solutionSet.refresh()
-            runOnUiThread() {
+            runOnUiThread {
                 for (e in entries) {
                     addSolutionMenuItem(e)
                 }

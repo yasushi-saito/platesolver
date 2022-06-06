@@ -7,8 +7,8 @@ import android.util.TypedValue
 // theme.
 fun getColorInTheme(context: Context, resourceId: Int): Int {
     val typedValue =  TypedValue()
-    val theme = context.getTheme();
-    theme.resolveAttribute(resourceId, typedValue, true);
+    val theme = context.theme
+    theme.resolveAttribute(resourceId, typedValue, true)
     return typedValue.data
 }
 
