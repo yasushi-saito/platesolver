@@ -61,10 +61,20 @@ class RunAstapFragment : Fragment() {
         const val EVENT_SHOW_DIALOG = 4
         const val EVENT_WELLKNOWNDSO_LOADED = 6
         const val EVENT_SUSPEND_DIALOG = 7
+        const val EVENT_IMAGE_LOADED = 8
     }
 
     // Setup parameters
-    private var imageUri: Uri? = null
+
+    // The image to analyze. The URI specified by the user is copied to the application storage,
+    // and imagePath points to a ile in the the application storage.
+    private var imagePath: File? = null
+    // The user-specified filename. It'different from the last part of imagePath, since
+    // the latter is a SHA of the contents.
+    //
+    // INVARIANT: imageFilename is set iff. imagePath is set.
+    private var imageFilename: String? = null
+
     private var fovDeg: Double = DEFAULT_FOV_DEG
     private var startSearch: WellKnownDso? = null
 
@@ -82,8 +92,27 @@ class RunAstapFragment : Fragment() {
 
     private val pickFileLauncher = newLauncher { intent: Intent ->
         val uri: Uri = intent.data ?: return@newLauncher
-        imageUri = uri
-        updateView()
+        val activity = requireActivity()
+        Thread {
+            val resolver = activity.contentResolver
+            val ext = getUriMimeType(resolver, uri)
+            val inputStream = resolver.openInputStream(uri)
+            if (inputStream == null) {
+                Log.e(TAG, "could not open $uri")
+                return@Thread
+            }
+            val sha256 = inputStream.use {
+                inputStreamDigest(inputStream)
+            }
+            val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
+            if (!imagePath.exists()) {
+                copyUriTo(resolver, uri, imagePath)
+            }
+            Log.d(TAG, "copied $uri to $imagePath")
+            sendMessage(EVENT_IMAGE_LOADED, LoadedImage(
+                imagePath=imagePath,
+                imageFilename = getUriFilename(resolver, uri)))
+        }.start()
     }
 
     override fun onCreateView(
@@ -218,8 +247,8 @@ class RunAstapFragment : Fragment() {
             searchStartEdit.isEnabled = value
         }
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)
-        if (imageUri != null) {
-            imageNameText.text = getUriFilename(requireContext().contentResolver, imageUri!!)
+        if (imageFilename != null) {
+            imageNameText.text = imageFilename
             setEditable(true)
         } else {
             imageNameText.text = ""
@@ -227,7 +256,7 @@ class RunAstapFragment : Fragment() {
         }
         val runButton = view.findViewById<Button>(R.id.button_astap_run)
         runButton.isEnabled =
-            isValidFovDeg(fovDeg) && imageUri != null && WellKnownDsoSet.getSingleton() != null
+            isValidFovDeg(fovDeg) && imagePath != null && WellKnownDsoSet.getSingleton() != null
     }
 
     private var dialog: AstapRunnerDialogFragment? = null
@@ -255,13 +284,22 @@ class RunAstapFragment : Fragment() {
                 dialog?.show(childFragmentManager, null)
             }
             EVENT_SUSPEND_DIALOG -> {
-                dialog?.setError(msg.obj as String)
+                dialog?.setError((msg.obj as? String)!!)
                 dialog?.suspend()
+            }
+            EVENT_IMAGE_LOADED -> {
+                val param = (msg.obj as? LoadedImage)!!
+                imagePath = param.imagePath
+                imageFilename = param.imageFilename
+                imageView.setImage(param.imagePath.absolutePath)
+                updateView()
             }
             else -> throw Exception("Invalid message $msg")
         }
         true
     }
+
+    data class LoadedImage(val imagePath: File, val imageFilename: String)
 
     private fun sendMessage(what: Int, message: Any) {
         eventHandler.sendMessage(
@@ -271,14 +309,15 @@ class RunAstapFragment : Fragment() {
 
     private fun onRunAstap() {
         assert(
-            isValidFovDeg(fovDeg) && imageUri != null
-        ) { Log.e(TAG, "fovDeg=$fovDeg, imageUri=$imageUri") }
+            isValidFovDeg(fovDeg) && imagePath != null
+        ) { Log.e(TAG, "fovDeg=$fovDeg, imagePath=$imagePath") }
 
         val activity = requireActivity()
         val astapRunnerMu = ReentrantLock()
         var astapRunner: AstapRunner? = null
 
-        val thisImageUri = imageUri!!
+        val thisImagePath = imagePath!!
+        val thisImageFilename = imageFilename!!
         val thisFovDeg = fovDeg
         val thisStartSearchDso = startSearch
 
@@ -289,23 +328,12 @@ class RunAstapFragment : Fragment() {
                 }
             },
             fovDeg = thisFovDeg,
-            imageName = getUriFilename(activity.contentResolver, thisImageUri),
+            imageName = thisImageFilename,
             searchOrigin = thisStartSearchDso?.cel
         )
         Thread(Runnable {
-            val resolver = activity.contentResolver
-            val ext = getUriMimeType(resolver, thisImageUri)
-            val inputStream = resolver.openInputStream(thisImageUri)
-            if (inputStream == null) {
-                Log.e(TAG, "could not open $thisImageUri")
-                return@Runnable
-            }
-            val sha256 = inputStream.use {
-                inputStreamDigest(inputStream)
-            }
-            val imagePath = File(activity.getExternalFilesDir(null), "${sha256}.$ext")
             val solverParams =
-                SolverParameters(imagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
+                SolverParameters(thisImagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
             val solutionJsonPath =
                 File(getSolutionDir(activity), "${solverParams.hashString()}.json")
 
@@ -326,14 +354,10 @@ class RunAstapFragment : Fragment() {
                         context = requireContext(),
                         solutionJsonPath = solutionJsonPath,
                         solverParams = solverParams,
-                        imageName = getUriFilename(requireContext().contentResolver, thisImageUri)
+                        imageName = thisImageFilename,
                     )
                 }
                 sendMessage(EVENT_SHOW_DIALOG, "" as Any)
-                if (!imagePath.exists()) {
-                    sendMessage(EVENT_MESSAGE, "copying file...")
-                    copyUriTo(activity.contentResolver, thisImageUri, imagePath)
-                }
                 sendMessage(EVENT_MESSAGE, "running Astap...")
                 val result = astapRunner!!.run()
                 when {
