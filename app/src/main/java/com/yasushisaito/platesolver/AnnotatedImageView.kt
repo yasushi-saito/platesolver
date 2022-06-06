@@ -216,14 +216,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private val paint = Paint() // Paint object for coloring shapes
 
 
-    //private var lastX = 0f // See onTouchEvent
-    //private var lastY = 0f // See onTouchEvent
-
-    //private var canvasX = 0f // x-coord of canvas (0,0)
-    //private var canvasY = 0f // y-coord of canvas (0,0)
-
-    //private var dragging = false // May be unnecessary
-
     // Detector for scaling gestures (i.e. pinching or double tapping
     private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
     private val gestureDetector = GestureDetector(context, GestureListener())
@@ -430,43 +422,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     //  really matter here.
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        /*
-        // These two are the coordinates of the user's finger whenever onTouchEvent is called
-        val x: Float = event.x
-        val y: Float = event.y
-
-        // https://www.c-sharpcorner.com/UploadFile/88b6e5/multi-touch-panning-pinch-zoom-image-view-in-android-using/
-        when (event.action and ACTION_MASK) {
-            ACTION_DOWN -> {
-                // Might not be necessary; check out later
-                dragging = true
-                // We want to store the coords of the user's finger as it is before they move
-                //  in order to calculate dx and dy
-                lastX = event.x
-                lastY = event.y
-            }
-            ACTION_MOVE -> {
-
-                if (dragging) {
-                    // Move the canvas dx units right and dy units down
-                    // dx and dy are divided by scaleFactor so that panning speeds are consistent
-                    //  with the zoom level
-                    canvasX += (event.x - lastX) / scaleFactor
-                    canvasY += (event.y - lastY) / scaleFactor
-                    lastX = x
-                    lastY = y
-                    invalidate()
-                }
-            }
-            ACTION_POINTER_UP -> {
-                // This sets initX and initY to the position of the pointer finger so that the
-                //  screen doesn't jump when it's lifted with the main finger still down
-                lastX = x
-                lastY = y
-            }
-            ACTION_UP -> dragging = false // Again, may be unnecessary
-        }
-*/
         gestureDetector.onTouchEvent(event)
         scaleDetector.onTouchEvent(event)
         return true
