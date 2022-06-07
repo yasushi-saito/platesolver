@@ -360,33 +360,29 @@ class RunAstapFragment : Fragment() {
                 sendMessage(EVENT_SHOW_DIALOG, "" as Any)
                 sendMessage(EVENT_MESSAGE, "running Astap...")
                 val result = astapRunner!!.run()
-                when {
-                    result.error != "" -> {
-                        sendMessage(
-                            EVENT_ERROR_MESSAGE,
-                            result.error
-                        )
-                    }
-                    result.exitCode == 0 -> sendMessage(
-                        EVENT_MESSAGE,
-                        "Astap finished successfully"
-                    )
+                Log.d(TAG, "astap finished: exitCode=${result.exitCode} error=${result.error}")
+                val errorMessage: String? = when {
+                    result.error != "" -> result.error
                     result.exitCode == 128 + 9 || result.exitCode == 128 + 15 -> {
                         // SIGTERM or SIGKILL
-                        sendMessage(EVENT_MESSAGE, "Astap aborted")
+                        "Astap aborted"
                     }
                     result.exitCode != 0 -> {
                         val stdout = String(result.stdout)
                         val stderr = String(result.stderr)
-                        sendMessage(
-                            EVENT_ERROR_MESSAGE,
-                            "Astap failed with outputs: $stdout\nstderr: $stderr"
-                        )
+                        "Astap failed with outputs: $stdout\nstderr: $stderr"
                     }
+                    else -> null
+                }
+                if (errorMessage != null) {
+                    sendMessage(EVENT_SUSPEND_DIALOG,  errorMessage)
+                    Log.d(TAG, errorMessage)
+                    return@Runnable
                 }
                 if (!solutionJsonPath.exists()) {
                     // This shouldn't happen
-                    throw Exception("could not build solution")
+                    sendMessage(EVENT_SUSPEND_DIALOG, "Astap finished succesfully, but it did not create a solution file")
+                    return@Runnable
                 }
                 sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
             } catch (ex: Exception) {
