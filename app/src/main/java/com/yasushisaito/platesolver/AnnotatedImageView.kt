@@ -11,9 +11,11 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import android.widget.Toast
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
+import kotlin.math.sqrt
 
 private data class CanvasCoordinate(val x: Double, val y: Double)
 
@@ -215,25 +217,29 @@ private fun placeDsoLabels(
 class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private val paint = Paint() // Paint object for coloring shapes
 
-
-    // Detector for scaling gestures (i.e. pinching or double tapping
+    // Detector for scaling gestures.
     private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
+    // Detector for panning & clicks.
     private val gestureDetector = GestureDetector(context, GestureListener())
+    // Fraction of solution.matchedStars that are shown.
+    // Darker objects will be hidden with small fraction values.
+    // Value must be in range [0, 1].
+    private var matchedStarsDisplayFraction = 1.0
 
-    // private var scaleFactor = 1f // Zoom level (initial value is 1x)
+    // List of labels and their locations on canvas. It contains all the labels in the solution,
+    // regardless of the value of matchedStarsDisplayFraction.
+    // It's a function of the solution and the image scaling factor (translationMatrix).
+    // It must be cleared when any of the inputs change.
     private var labelPlacements = ArrayList<LabelPlacement>()
 
     companion object {
         const val TAG = "AnnotatedImageView"
     }
 
-    private var optionalSolution: Solution? = null
+    // The image to show.
     private var optionalImageBitmap: Bitmap? = null
-
-    // Fraction of solution.matchedStars that are shown.
-    // Darker objects will be hidden with small fraction values.
-    // Value is in range [0, 1]
-    private var matchedStarsDisplayFraction = 1.0
+    // The star / dso labels to show.
+    private var optionalSolution: Solution? = null
 
     // Color of the text to be used when drawing outside the image's frame.
     private var offImageTextColor = getColorInTheme(context, R.attr.textColor)
@@ -252,6 +258,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     fun setSolution(s: Solution) {
         optionalImageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
         optionalSolution = s
+        labelPlacements.clear()
         invalidate()
     }
 
@@ -439,11 +446,48 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         return true
     }
 
+    private fun findNearestDso(
+        labelPlacements: ArrayList<LabelPlacement>,
+        canvasX: Double, canvasY: Double,
+        matchedStarsDisplayFraction: Double) : WellKnownDso? {
+        val distanceSquared = fun (x0: Double, y0: Double, x1: Double, y1: Double): Double {
+            return (x0-x1)*(x0-x1) + (y0-y1)*(y0-y1)
+        }
+        if (optionalSolution == null) return null
+        val solution = optionalSolution!!
+        val MAX_RADIUS2 = 400.0
+        var minDist: Double = MAX_RADIUS2
+        val nToSearch = ceil(labelPlacements.size * matchedStarsDisplayFraction).toInt()
+
+        var nearestDso: WellKnownDso? = null
+        for (i in 0 until nToSearch-1) {
+            val dso = solution.matchedStars[i]
+            val p = labelPlacements[i]
+            val d = distanceSquared(p.circle.centerX, p.circle.centerY, canvasX, canvasY)
+            if (d < minDist) {
+                minDist = d
+                nearestDso = dso
+            }
+        }
+        return nearestDso
+    }
+
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(e0: MotionEvent, e1: MotionEvent, dX: Float, dY: Float): Boolean {
             translationMatrix.postTranslate(-dX, -dY)
             invalidate()
             return true
+        }
+        override fun onLongPress(e: MotionEvent) {
+            val im = Matrix()
+            translationMatrix.invert(im)
+            val coord = floatArrayOf(e.x, e.y)
+            im.mapPoints(coord)
+            val dso = findNearestDso(
+                labelPlacements,
+                coord[0].toDouble(), coord[1].toDouble(),
+                matchedStarsDisplayFraction)
+            Log.d(TAG, "long press canvas ${coord[0]}, ${coord[1]} match=$dso")
         }
     }
 
