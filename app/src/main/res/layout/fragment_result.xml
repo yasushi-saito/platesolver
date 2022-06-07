@@ -26,11 +26,10 @@
         app:layout_constraintGuide_end="16dp" />
 
     <TextView
-        style="@style/BodyText"
         android:id="@+id/text_result_imagename"
+        style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="imagename"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_image"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
@@ -102,14 +101,13 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        app:layout_constraintGuide_begin="181dp" />
+        app:layout_constraintGuide_begin="162dp" />
 
     <TextView
-        style="@style/BodyText"
         android:id="@+id/text_result_imagedimension"
+        style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="dimension"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_imagedimension"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
@@ -137,7 +135,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Show objects "
+        android:text="Labels"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0" />
 

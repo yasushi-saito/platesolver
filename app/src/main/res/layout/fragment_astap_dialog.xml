@@ -12,8 +12,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Search origin"
-        app:layout_constraintTop_toBottomOf="@+id/textView5"
-        tools:layout_editor_absoluteX="57dp" />
+        app:layout_constraintStart_toStartOf="@+id/guideline8"
+        app:layout_constraintTop_toBottomOf="@+id/textView5" />
 
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/barrier4"
@@ -59,8 +59,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Field of view"
-        app:layout_constraintTop_toBottomOf="@+id/textView4"
-        tools:layout_editor_absoluteX="57dp" />
+        app:layout_constraintStart_toStartOf="@+id/guideline8"
+        app:layout_constraintTop_toBottomOf="@+id/textView4" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline9"
@@ -69,17 +69,16 @@
         android:orientation="vertical"
         app:layout_constraintGuide_begin="193dp" />
 
-    <EditText
+    <TextView
         android:id="@+id/text_astap_dialog_image_name"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:ems="10"
-        android:inputType="textPersonName"
-        android:text="filename"
+        android:inputType="none|text"
         app:layout_constraintBaseline_toBaselineOf="@+id/textView4"
         app:layout_constraintStart_toStartOf="@+id/guideline9" />
 
-    <EditText
+    <TextView
         android:id="@+id/text_astap_dialog_fov_deg"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -88,7 +87,7 @@
         app:layout_constraintBaseline_toBaselineOf="@+id/textView5"
         app:layout_constraintStart_toStartOf="@+id/guideline9" />
 
-    <EditText
+    <TextView
         android:id="@+id/text_astap_dialog_search_origin"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -98,6 +97,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline9" />
 
     <Button
+        style="@style/RegularButton"
         android:id="@+id/button_astap_abort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -139,6 +139,7 @@
         app:layout_constraintTop_toBottomOf="@+id/textView5" />
 
     <Button
+        style="@style/RegularButton"
         android:id="@+id/button_astap_close"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -5,13 +5,13 @@
     android:layout_height="match_parent">
 
     <Button
+        style="@style/RegularButton"
         android:id="@+id/button_settings_download_stardb"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
         android:onClick="onInstallStarDb"
         android:text="@string/settings_install_stardb"
-        style="@style/Theme.PlateSolver"
         app:layout_constraintStart_toStartOf="@+id/guideline11"
         app:layout_constraintTop_toTopOf="parent" />
 
