@@ -1,10 +1,26 @@
 <resources>
-    <string name="app_name">Platesolver</string>
+    <string name="app_name">Astap platesolver</string>
     <string name="nav_open_drawer">Open navigation drawer</string>
     <string name="nav_close_drawer">Close navigation drawer</string>
 
+    <string name="abort">Abort</string>
     <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+
+    <string name="image">Image</string>
+    <string name="dimension">Dimension</string>
+    <string name="last_update">Last update</string>
+    <string name="show_matched_stars">Labels</string>
+    <string name="fewer">Fewer</string>
+    <string name="more">More</string>
+    <string name="run">Run</string>
+
     <string name="settings_install_stardb">Install star DB (H17)</string>
     <string name="settings_reinstall_stardb">Reinstall star DB (H17)</string>
     <string name="settings_retry_install_stardb">Retry install star DB (H17)</string>
+
+    <string name="search_origin">Search origin</string>
+    <string name="running_astap">Running astap…</string>
+    <string name="filename">Filename</string>
+    <string name="field_of_view">Field of view</string>
 </resources>

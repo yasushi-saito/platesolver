@@ -38,7 +38,7 @@
         style="@style/HeaderText"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Image"
+        android:text="@string/image"
         app:layout_constraintBottom_toTopOf="@+id/label_imagedimension"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         tools:text="Image" />
@@ -48,7 +48,7 @@
         style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Dimension"
+        android:text="@string/dimension"
         app:layout_constraintBottom_toTopOf="@+id/label_imagedimension2"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1" />
 
@@ -75,7 +75,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="Last update"
+        android:text="@string/last_update"
         app:layout_constraintBottom_toTopOf="@+id/label_fov"
         app:layout_constraintStart_toStartOf="@+id/guideline_left1" />
 
@@ -92,7 +92,7 @@
         android:layout_width="117dp"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="Field of view"
+        android:text="@string/field_of_view"
         app:layout_constraintBottom_toTopOf="@+id/label_show_objects"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0" />
 
@@ -112,20 +112,18 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        style="@style/BodyText"
         android:id="@+id/text_result_imagelastupdate"
+        style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="lastupdate"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_imagedimension2"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        style="@style/BodyText"
         android:id="@+id/text_result_fov_deg"
+        style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="fov"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_fov"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
@@ -135,25 +133,25 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="Labels"
+        android:text="@string/show_matched_stars"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0" />
 
     <TextView
-        style="@style/BodyText"
         android:id="@+id/textView6"
+        style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Fewer"
+        android:text="@string/fewer"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_show_objects"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
-        style="@style/BodyText"
         android:id="@+id/textView7"
+        style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="More"
+        android:text="@string/more"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_show_objects"
         app:layout_constraintEnd_toStartOf="@+id/guideline_left" />
 
