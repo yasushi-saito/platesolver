@@ -5,7 +5,9 @@ import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import java.io.*
+import java.util.*
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
 
 
@@ -60,6 +62,7 @@ class AstapRunner(
     val solverParams: SolverParameters,
     // The destination path of the final .json file
     val solutionJsonPath: File,
+    val onMessage: (message: String) -> Unit,
 ) {
     companion object {
         const val TAG = "AstapRunner"
@@ -231,14 +234,24 @@ class AstapRunner(
 
         val readOutputs = fun(stream: InputStream, out: OutputStream): Thread {
             val thread = Thread {
-                val buf = ByteArray(8192)
+                val output = StringBuilder()
                 try {
+                    val scanner = Scanner(stream)
+                    while (scanner.hasNextLine()) {
+                        val line = scanner.nextLine()
+                        output.appendLine(line)
+                        out.write("${line}\n".toByteArray())
+                        Log.d(TAG, "read: ${line}")
+                        onMessage(output.toString())
+                    }
+                /*
                     while (true) {
                         val len = stream.read(buf)
                         if (len < 0) break
                         System.out.write(buf, 0, len)
                         out.write(buf)
                     }
+                 */
                 } catch (e: Exception) {
                     Log.e(TAG, "output reader: $e (ignored)")
                 }

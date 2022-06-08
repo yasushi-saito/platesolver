@@ -58,6 +58,9 @@ class AstapResultReader(stream: InputStream) {
         return warnings
     }
 
+    // Parses a FITS input. Each line is of form
+    //   KEY = VALUE
+    // with some exceptions, like WARNING and END.
     private fun parse(stream: InputStream) {
         val numOrBoolRe = Regex("^([A-Z0-9-_]+)\\s*=\\s*([0-9.+-eETF]+)")
         val strRe = Regex("^([A-Z0-9-_]+)\\s*=\\s*'([^']+)'")

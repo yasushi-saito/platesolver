@@ -355,6 +355,7 @@ class RunAstapFragment : Fragment() {
                         solutionJsonPath = solutionJsonPath,
                         solverParams = solverParams,
                         imageName = thisImageFilename,
+                        onMessage = { message -> sendMessage(EVENT_MESSAGE, message) }
                     )
                 }
                 sendMessage(EVENT_SHOW_DIALOG, "" as Any)
