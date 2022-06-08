@@ -9,7 +9,7 @@ class UtilTest {
     @Test
     fun writeFileAtomic() {
         val testPath = File.createTempFile("tmp", "tmp")
-        com.yasushisaito.platesolver.writeFileAtomic(testPath, "hellohello")
+        writeFileAtomic(testPath, "hellohello".toByteArray())
         FileInputStream(testPath).use {stream->
             assertEquals(String(stream.readBytes()), "hellohello")
         }

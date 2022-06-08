@@ -82,7 +82,7 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
                     if (singleton == null) {
                         Log.d(TAG, "reading asset $filename")
                         assets.open(filename).use { inputStream ->
-                            singleton = parseCsv(inputStream)
+                            singleton = parseCsvToWellKnownDsoSet(inputStream)
                         }
                         writeCache(singleton!!, cachePath)
                         for (cb in callbacks) {
@@ -159,7 +159,7 @@ private fun readCache(cachePath: File): WellKnownDsoSet? {
 }
 
 // Parses wellknowndso*.csv.
-private fun parseCsv(stream: InputStream): WellKnownDsoSet {
+fun parseCsvToWellKnownDsoSet(stream: InputStream): WellKnownDsoSet {
     val entries = ArrayList<WellKnownDso>()
     val reader = BufferedReader(InputStreamReader(stream))
     // The first line is the header

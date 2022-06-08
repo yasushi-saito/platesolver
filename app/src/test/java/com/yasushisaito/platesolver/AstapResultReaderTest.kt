@@ -4,7 +4,8 @@ import org.junit.Test
 
 import org.junit.Assert.*
 
-val TAG = "AstapResultReaderTest"
+const val TAG = "AstapResultReaderTest"
+
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
@@ -27,13 +28,13 @@ class AstapResultReaderTest {
 
             val refPixel = PixelCoordinate(wcs.getDouble(AstapResultReader.CRPIX1), wcs.getDouble(AstapResultReader.CRPIX2))
             val refCel = CelestialCoordinate(wcs.getDouble(AstapResultReader.CRVAL1), wcs.getDouble(AstapResultReader.CRVAL2))
-            val dim = AstapResultReader.ImageDimension((refPixel.x*2).toInt(), (refPixel.y*2).toInt())
+            val dim = ImageDimension((refPixel.x*2).toInt(), (refPixel.y*2).toInt())
             val pixelToWcsMatrix = Matrix22(
                 wcs.getDouble(AstapResultReader.CD1_1), wcs.getDouble(AstapResultReader.CD1_2),
                 wcs.getDouble(AstapResultReader.CD2_1), wcs.getDouble(AstapResultReader.CD2_2)
             )
             val solution = Solution(refPixel=refPixel,
-                params=SolverParameters(imagePath="foo", fovDeg=2.0),
+                params=SolverParameters(imagePath="foo", fovDeg=2.0, startSearch=null),
                 imageName="foo",
                 version=Solution.CURRENT_VERSION,
                 refWcs=refCel,
@@ -45,16 +46,6 @@ class AstapResultReaderTest {
             assertEquals(6025, dim.width)
             assertEquals(4025, dim.height)
 
-
-            /*
-            var wcsCoord = solution.pixelToWcs(PixelCoordinate(0.0, 0.0))
-            assertEquals(82.782, wcsCoord.ra, 1e-3)
-            assertEquals(-2.934, wcsCoord.dec, 1e-3)
-
-            wcsCoord = solution.pixelToWcs(PixelCoordinate(6000.0, 4000.0))
-            assertEquals(85.330, wcsCoord.ra, 1e-3)
-            assertEquals(-6.505, wcsCoord.dec, 1e-3)
-*/
             testRoundTrip(solution, refPixel.x, refPixel.y)
             testRoundTrip(solution, 0.0, 0.0)
             testRoundTrip(solution, 100.0, 100.0)

@@ -22,7 +22,7 @@ RA[0..864000], DEC[-324000..324000], name(s), length [0.1 min], width[0.1 min], 
         """
         val stream = data.byteInputStream()
         stream.use {
-            val ds = WellKnownDsoSet(stream)
+            val ds = parseCsvToWellKnownDsoSet(stream)
             var v0 = ds.findByName("NP_2020")
             assertNotNull(v0)
             assertEquals(863691.0*360/864000, v0!!.cel.ra, 1e-6)

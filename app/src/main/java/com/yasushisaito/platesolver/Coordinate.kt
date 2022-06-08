@@ -31,6 +31,9 @@ data class ImageDimension(val width: Int, val height: Int)
 // Size of a view
 data class CanvasDimension(val width: Int, val height: Int)
 
+// Coordinate within a canvas. (0, 0) is at the upper left corner of the image.
+data class CanvasCoordinate(val x: Double, val y: Double)
+
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
 fun rightAscensionToString(ra: Double): String {
     val hour = (ra / 15.0).toInt()
@@ -99,3 +102,46 @@ fun convertCelestialToPixel(wcs: CelestialCoordinate,
     val d = matrix.multiply(Vector2(dRa, dDec))
     return PixelCoordinate(x=refPixel.x + d.x * PIXEL_BIN_FACTOR, y=imageDimension.height - (d.y * PIXEL_BIN_FACTOR + refPixel.y))
 }
+
+// Compute the part of the canvas that shows the image.
+// The returned value is the bottom right corner of the rectangle.
+private fun canvasImageDimension(
+    imageDim: ImageDimension,
+    canvasDim: CanvasDimension): CanvasCoordinate {
+    // Preserve the aspect ratio of the original image.
+    val imageAspectRatio = imageDim.width / imageDim.height
+    val canvasAspectRatio = canvasDim.width / canvasDim.height
+
+    // Size of the subpart of the canvas that's used to draw the bitmap
+    if (imageAspectRatio > canvasAspectRatio) {
+        // If the image is horizontally oblong
+        return CanvasCoordinate(canvasDim.width.toDouble(), canvasDim.width.toDouble() / imageAspectRatio)
+    }
+    // The image is vertically oblong
+    return CanvasCoordinate(canvasDim.height.toDouble(), canvasDim.height.toDouble() * imageAspectRatio)
+}
+
+fun convertPixelToCanvas(
+    p: PixelCoordinate,
+    imageDim: ImageDimension,
+    canvasDim: CanvasDimension,
+): CanvasCoordinate {
+    val canvasImageDim = canvasImageDimension(imageDim, canvasDim)
+    return CanvasCoordinate(
+        p.x / imageDim.width * canvasImageDim.x,
+        p.y / imageDim.height * canvasImageDim.y
+    )
+}
+
+fun convertCanvasToPixel(
+    c: CanvasCoordinate,
+    imageDim: ImageDimension,
+    canvasDim: CanvasDimension,
+): PixelCoordinate {
+    val canvasImageDim = canvasImageDimension(imageDim, canvasDim)
+    return PixelCoordinate(
+        c.x / canvasImageDim.x * imageDim.width,
+        c.y / canvasImageDim.y * imageDim.height,
+    )
+}
+

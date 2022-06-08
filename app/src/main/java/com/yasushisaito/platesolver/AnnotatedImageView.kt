@@ -11,13 +11,10 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import android.widget.Toast
+import com.skydoves.balloon.Balloon
 import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
-import kotlin.math.sqrt
-
-private data class CanvasCoordinate(val x: Double, val y: Double)
 
 private data class LabelCircle(
     val centerX: Double,
@@ -86,33 +83,6 @@ private class ConflictDetector {
     }
 }
 
-private fun pixelCoordToCanvasCoord(
-    p: PixelCoordinate,
-    imageDim: ImageDimension,
-    canvasDim: CanvasDimension,
-): CanvasCoordinate {
-    // Preserve the aspect ratio of the original image.
-    val imageAspectRatio = imageDim.width / imageDim.height
-    val canvasAspectRatio = canvasDim.width / canvasDim.height
-
-    // Size of the subpart of the canvas that's used to draw the bitmap
-    val canvasImageWidth: Float
-    val canvasImageHeight: Float
-    if (imageAspectRatio > canvasAspectRatio) {
-        // If the image is horizontally oblong
-        canvasImageWidth = canvasDim.width.toFloat()
-        canvasImageHeight = canvasDim.width.toFloat() / imageAspectRatio
-    } else {
-        // If the image is vertically oblong
-        canvasImageHeight = canvasDim.height.toFloat()
-        canvasImageWidth = canvasDim.height.toFloat() * imageAspectRatio
-    }
-    return CanvasCoordinate(
-        p.x / imageDim.width * canvasImageWidth,
-        p.y / imageDim.height * canvasImageHeight
-    )
-}
-
 // Defines the canvas location of a star label
 private data class LabelPlacement(
     // The location of the circle that marks the star or nebula
@@ -140,7 +110,7 @@ private fun placeDsoLabels(
 
     for (e in solution.matchedStars) {
         val name = e.names[0]
-        val c = pixelCoordToCanvasCoord(solution.celestialToPixel(e.cel), imageDim, canvasDim)
+        val c = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
         conflictDetector.addCircle(LabelCircle(c.x, c.y, circleRadius, label = name))
     }
 
@@ -157,7 +127,7 @@ private fun placeDsoLabels(
         val name = e.names[0]
 
         paint.getTextBounds(name, 0, name.length, textBounds)
-        val c = pixelCoordToCanvasCoord(solution.celestialToPixel(e.cel), imageDim, canvasDim)
+        val c = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
 
         // Try a few points to place the label. Stop if we find a point what doesn't overlap
         // with existing labels. If all points overlap with existing labels, pick the one
@@ -200,7 +170,7 @@ private fun placeDsoLabels(
             }
         }
         conflictDetector.addRect(bestRect!!)
-        val center = pixelCoordToCanvasCoord(solution.celestialToPixel(e.cel), imageDim, canvasDim)
+        val center = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
         placements.add(
             LabelPlacement(
                 circle = LabelCircle(center.x, center.y, circleRadius, label = name),
@@ -234,6 +204,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     companion object {
         const val TAG = "AnnotatedImageView"
+        private var TEXT_SIZE = 40f
     }
 
     // The image to show.
@@ -243,7 +214,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     // Color of the text to be used when drawing outside the image's frame.
     private var offImageTextColor = getColorInTheme(context, R.attr.textColor)
-    private var textSize = 40f
 
     private val translationMatrix = Matrix()
 
@@ -283,7 +253,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
         canvas.save() // save() and restore() are used to reset canvas data after each draw
         paint.color = offImageTextColor
-        paint.textSize = textSize / scaleFactor
+        paint.textSize = TEXT_SIZE / scaleFactor
 
         val canvasDim = CanvasDimension(width, height)
         val imageDim = ImageDimension(imageBitmap.width, imageBitmap.height)
@@ -295,7 +265,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         //canvas.translate(canvasX, canvasY)
 
         // Preserve the aspect ratio of the original image.
-        val canvasImageRect = pixelCoordToCanvasCoord(
+        val canvasImageRect = convertPixelToCanvas(
             PixelCoordinate(
                 imageBitmap.width.toDouble(),
                 imageBitmap.height.toDouble(),
@@ -417,7 +387,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         val offX = if (baseX >= 0) 0.0 else textWidth.toDouble()
         val offY = if (baseY >= 0) -textHeight.toDouble() else 0.0
         val cx =
-            pixelCoordToCanvasCoord(px, imageDim = solution.imageDimension, canvasDim = canvasDim)
+            convertPixelToCanvas(px, imageDim = solution.imageDimension, canvasDim = canvasDim)
 
         var y = cx.y + baseY - offY
         for (text in texts) {
@@ -479,6 +449,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             return true
         }
         override fun onLongPress(e: MotionEvent) {
+            if (optionalSolution == null) return
+            val solution = optionalSolution!!
             val im = Matrix()
             translationMatrix.invert(im)
             val coord = floatArrayOf(e.x, e.y)
@@ -487,7 +459,42 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 labelPlacements,
                 coord[0].toDouble(), coord[1].toDouble(),
                 matchedStarsDisplayFraction)
+            val message = if (dso != null) {
+                val buf = StringBuilder()
+                for (name in dso.names) {
+                    buf.append("${name}<br>")
+                }
+                buf.append("ra: %s<br>dec: %s".format(
+                    rightAscensionToString(dso.cel.ra),
+                    declinationToString(dso.cel.dec)))
+                buf.toString()
+            } else {
+                val p = convertCanvasToPixel(
+                    CanvasCoordinate(coord[0].toDouble(), coord[1].toDouble()),
+                    solution.imageDimension,
+                    CanvasDimension(width, height))
+                val cel = solution.pixelToCelestial(p)
+                val buf = StringBuilder()
+                buf.append("ra: %s<br>dec: %s".format(
+                    rightAscensionToString(cel.ra),
+                    declinationToString(cel.dec)))
+                buf.toString()
+            }
             Log.d(TAG, "long press canvas ${coord[0]}, ${coord[1]} match=$dso")
+            // https://medium.com/swlh/a-lightweight-tooltip-popup-for-android-ef9484a992d7
+            val balloon = Balloon.Builder(context).setArrowSize(10)
+                .setCornerRadius(4f)
+                .setAlpha(0.9f)
+                .setArrowSize(0)
+                .setText(message)
+                .setTextSize(16f)
+                .setTextColor(Color.BLACK)
+                .setTextIsHtml(true)
+                .setBackgroundColor(Color.WHITE)
+                .setAutoDismissDuration(3000L)
+                .build()
+            balloon.showAsDropDown(this@AnnotatedImageView, e.x.toInt(), e.y.toInt())
+            //balloon.showAlignLeft(this@AnnotatedImageView, e.x.toInt(), e.y.toInt())
         }
     }
 
