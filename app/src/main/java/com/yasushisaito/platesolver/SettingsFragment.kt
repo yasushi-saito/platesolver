@@ -1,6 +1,7 @@
 package com.yasushisaito.platesolver
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.Context.DOWNLOAD_SERVICE
 import android.net.Uri
@@ -86,9 +87,27 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         starDbZipPath = File(getStarDbDir(requireContext(), STARDB_NAME), "h17.zip")
         downloadStarDbButton = view.findViewById(R.id.button_settings_download_stardb)
+        val starDbInstalled =  isStarDbInstalled(requireContext(), STARDB_NAME)
+
         downloadStarDbButton.setOnClickListener {
             when (downloadState.status) {
-                DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> startDownloadStarDb()
+                DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> {
+                    if (starDbInstalled) {
+                        val dialog = AlertDialog.Builder(requireContext())
+                            .setMessage("Do you really want to delete the local copy of the database and reinstall?")
+                            .setTitle("Reinstall star DB")
+                            .setPositiveButton(R.string.reinstall, { dialog, which ->
+                                Log.d(TAG, "reinstall start")
+                                startDownloadStarDb()
+                            })
+                            .setNegativeButton(R.string.cancel, { dialog, which ->
+                                Log.d(TAG, "reinstall canceled")
+                            }).create()
+                        dialog.show()
+                    } else {
+                        startDownloadStarDb()
+                    }
+                }
                 DownloadStatus.DOWNLOADING -> cancelDownloadStarDb()
                 else -> {
                     Log.d(TAG, "Ignore download button event with state $downloadState")
@@ -97,11 +116,6 @@ class SettingsFragment : Fragment() {
         }
         downloadProgressBar = view.findViewById(R.id.progress_settings_download)
         downloadMessageTextView = view.findViewById(R.id.text_settings_download_message)
-        /*
-        requireActivity().registerReceiver(
-            onDownloadComplete,
-            IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        )*/
 
         if (isStarDbInstalled(requireContext(), STARDB_NAME)) {
             downloadState = DownloadState(DownloadStatus.DONE, "")
@@ -136,7 +150,6 @@ class SettingsFragment : Fragment() {
 
     private val probeDownloadStatusRunner = object : Runnable {
         override fun run() {
-            Log.d(TAG, "probe download state")
             if (downloadState.status != DownloadStatus.DOWNLOADING) return
             assert(downloadStarDbRequestId != INVALID_DOWNLOAD_ID)
             val cursor = downloadManager.query(
@@ -146,7 +159,6 @@ class SettingsFragment : Fragment() {
             if (!cursor.moveToFirst()) return
             @SuppressLint("Range")
             val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
-            Log.d(TAG, "download status = $status")
             when (status) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
                     eventHandler.removeCallbacks(this)
@@ -172,14 +184,16 @@ class SettingsFragment : Fragment() {
                         cursor.getLong(cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
 
                     val message = if (totalBytes > 0) {
-                        "Downloaded %.2fMiB / %.2fMiB".format(
+                        "Downloaded %.2fMiB of %.2fMiB".format(
                             downloadedBytes.toDouble() / (1 shl 20),
                             totalBytes.toDouble() / (1 shl 20)
                         )
-                    } else {
+                    } else if (downloadedBytes > 0){
                         "Downloaded %2fMiB".format(
                             downloadedBytes.toDouble() / (1 shl 20),
                         )
+                    } else {
+                        "Downloading..."
                     }
                     Log.d(TAG, "downloaded $downloadedBytes / $totalBytes")
                     downloadState = DownloadState(DownloadStatus.DOWNLOADING, message)
@@ -275,10 +289,10 @@ class SettingsFragment : Fragment() {
                 setButton(R.string.settings_install_stardb, true, View.INVISIBLE)
             }
             DownloadStatus.DOWNLOADING -> {
-                setButton(R.string.cancel, true, View.VISIBLE)
+                setButton(R.string.cancel_download, true, View.VISIBLE)
             }
             DownloadStatus.DOWNLOADED -> {
-                setButton(R.string.cancel, false, View.VISIBLE)
+                setButton(R.string.cancel_download, false, View.VISIBLE)
 
                 downloadState = DownloadState(DownloadStatus.EXPANDING, "Expanding zip file...")
                 updateView()
@@ -306,7 +320,7 @@ class SettingsFragment : Fragment() {
                 }.start()
             }
             DownloadStatus.EXPANDING -> {
-                setButton(R.string.cancel, false, View.VISIBLE)
+                setButton(R.string.cancel_download, false, View.VISIBLE)
             }
             DownloadStatus.DONE -> {
                 setButton(R.string.settings_reinstall_stardb, true, View.INVISIBLE)

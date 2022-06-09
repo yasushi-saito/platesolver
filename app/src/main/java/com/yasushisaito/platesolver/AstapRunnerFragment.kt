@@ -70,7 +70,7 @@ class RunAstapFragment : Fragment() {
     // The image to analyze. The URI specified by the user is copied to the application storage,
     // and imagePath points to a ile in the the application storage.
     private var imagePath: File? = null
-    // The user-specified filename. It'different from the last part of imagePath, since
+    // The user-specified filename. Its different from the last part of imagePath, since
     // the latter is a SHA of the contents.
     //
     // INVARIANT: imageFilename is set iff. imagePath is set.
@@ -383,7 +383,7 @@ class RunAstapFragment : Fragment() {
                 }
                 if (!solutionJsonPath.exists()) {
                     // This shouldn't happen
-                    sendMessage(EVENT_SUSPEND_DIALOG, "Astap finished succesfully, but it did not create a solution file")
+                    sendMessage(EVENT_SUSPEND_DIALOG, "Astap finished successfully, but it did not create a solution file")
                     return@Runnable
                 }
                 sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)

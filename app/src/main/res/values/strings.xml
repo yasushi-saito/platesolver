@@ -5,6 +5,7 @@
 
     <string name="abort">Abort</string>
     <string name="cancel">Cancel</string>
+    <string name="cancel_download">Cancel download</string>
     <string name="close">Close</string>
 
     <string name="image">Image</string>
@@ -20,6 +21,7 @@
     <string name="settings_retry_install_stardb">Retry install star DB (H17)</string>
 
     <string name="degree">deg</string>
+    <string name="reinstall">Reinstall</string>
 
     <string name="pick_file">Pick file</string>
     <string name="search_origin">Search origin</string>
