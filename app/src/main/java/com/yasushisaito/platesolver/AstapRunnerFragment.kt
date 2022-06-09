@@ -228,7 +228,6 @@ class RunAstapFragment : Fragment() {
             searchStartEdit.dropDownWidth = 400
             setOnChangeListener(searchStartEdit) {
                 startSearch = wellKnownDsoNameMap[searchStartEdit.text.toString()]
-                Log.d(TAG, "searchStartEdit selected $startSearch")
                 if (startSearch == null) {
                     searchStartEdit.setText("")
                     searchStartRaDecView.text = ""

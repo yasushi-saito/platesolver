@@ -54,7 +54,6 @@ class SolutionSet(private val solutionDir: File) {
     private var nextId = 1
 
     init {
-        Log.d(TAG, "REFRESHING")
         refresh()
     }
 

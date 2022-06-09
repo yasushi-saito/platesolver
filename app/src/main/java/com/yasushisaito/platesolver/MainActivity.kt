@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "platesolver started")
         setContentView(R.layout.activity_main)
         val toolbar = findViewById<View>(R.id.toolbar) as Toolbar
         setSupportActionBar(toolbar)
@@ -85,7 +84,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         ft.commit()
 
         WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
-        Log.d(TAG, "platesolver finished starting")
     }
 
     fun refreshSolutionMenuItems() {

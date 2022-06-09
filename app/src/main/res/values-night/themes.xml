@@ -10,6 +10,7 @@
         <item name="colorAccent">@color/secondaryDark</item>
 
         <item name="android:textColorPrimary">@color/white</item>
+        <item name="android:textColorSecondary">@color/white</item>
     </style>
 
     <style name="RegularButton" parent="Theme.PlateSolver">
@@ -19,7 +20,12 @@
         <item name="android:textStyle">bold</item>
     </style>
 
-    <style name="Toolbar" parent="android:Widget.Toolbar">
-        <item name="android:textColor">@color/white</item>
+    <style name="ToolBarStyle" parent="Theme.AppCompat">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="drawerArrowStyle">@style/DrawerArrowStyle</item>
     </style>
+
 </resources>

@@ -219,7 +219,6 @@ class AstapRunner(
                         val line = scanner.nextLine()
                         output.appendLine(line)
                         out.write("${line}\n".toByteArray())
-                        Log.d(TAG, "read: $line")
                         onMessage(output.toString())
                     }
                 /*

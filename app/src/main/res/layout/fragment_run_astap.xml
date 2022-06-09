@@ -25,7 +25,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="8dp"
-        android:text="Pick file"
+        android:text="@string/pick_file"
         app:layout_constraintBottom_toTopOf="@+id/label_setup_fov"
         app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
@@ -55,7 +55,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@id/text_astap_fov_deg"
-        android:text="deg)"
+        android:text="@string/degree"
         app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_deg"
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_deg" />
 
@@ -98,7 +98,7 @@
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="mm FX lens ("
+        android:text="mm lens (FX), "
         android:labelFor="@id/text_astap_fov_lens"
         app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_lens"
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_lens" />

@@ -474,7 +474,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                     declinationToString(cel.dec)))
                 buf.toString()
             }
-            Log.d(TAG, "long press canvas ${coord[0]}, ${coord[1]} match=$dso")
             // https://medium.com/swlh/a-lightweight-tooltip-popup-for-android-ef9484a992d7
             val balloon = Balloon.Builder(context).setArrowSize(10)
                 .setCornerRadius(4f)
