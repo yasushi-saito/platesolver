@@ -11,28 +11,6 @@ import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
 
 
-// Remove the extension from the given path.
-// If the path's filename is missing '.',
-// it returns the path itself.
-//
-// Example:
-//   removeExt(File(x, "bar.jpg") -> File(x, "bar")
-private fun removeExt(path: File): File {
-    val name = path.name
-    val i = name.lastIndexOf('.')
-    if (i < 0) return path
-    val basename = name.substring(0, i)
-    return File(path.parent, basename)
-}
-
-// Replace the extension of the given file.
-// Example:
-//   replaceExt(File("foo/bar.com"), ".exe") -> File("foo/bar.exe")
-private fun replaceExt(path: File, ext: String): File {
-    val basename = removeExt(path)
-    return File(basename.parentFile, basename.name + ext)
-}
-
 // Checks if this machine is likely an Android emulator.
 // https://stackoverflow.com/questions/2799097/how-can-i-detect-when-an-android-application-is-running-in-the-emulator
 private fun isEmulator(): Boolean {
@@ -241,7 +219,7 @@ class AstapRunner(
                         val line = scanner.nextLine()
                         output.appendLine(line)
                         out.write("${line}\n".toByteArray())
-                        Log.d(TAG, "read: ${line}")
+                        Log.d(TAG, "read: $line")
                         onMessage(output.toString())
                     }
                 /*

@@ -19,7 +19,7 @@ data class CelestialCoordinate(
     val dec: Double) : Serializable {
 
     fun toDisplayString(): String {
-        return "ra: %s\ndec: %s".format(
+        return "RA: %s\nDec: %s".format(
             rightAscensionToString(ra),
             declinationToString(dec))
     }

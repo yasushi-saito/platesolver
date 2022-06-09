@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!--
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -7,8 +9,19 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="red">#FFFF0000</color>
+    <color name="red">#FFFF0000</color> -->
 
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+    <color name="primary">#1f0593</color>
+    <color name="primaryDark">#000064</color>
+    <color name="primaryLight">#5d36c5</color>
+
+    <color name="secondary">#d83880</color>
+    <color name="secondaryDark">#a20054</color>
+    <color name="secondaryLight">#ff6eaf</color>
+
+    <color name="accent">#b5ad18</color>
     <!-- used by texts and lines to mark star / dso locations on an image
          This color doesn't depend on themes, since images are always near black
 

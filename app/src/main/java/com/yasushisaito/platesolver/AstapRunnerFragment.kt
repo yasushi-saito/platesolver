@@ -1,5 +1,6 @@
 package com.yasushisaito.platesolver
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -201,6 +202,7 @@ class RunAstapFragment : Fragment() {
     // Maps DSO names in the above -> WellKnownDso objects
     private val wellKnownDsoNameMap = HashMap<String, WellKnownDso>()
 
+    @SuppressLint("SetTextI18n")
     private fun updateView() {
         val view: View = thisView ?: return
 

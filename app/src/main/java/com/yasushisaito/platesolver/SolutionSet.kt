@@ -35,7 +35,7 @@ class SolutionSet(private val solutionDir: File) {
         val jsonPath: File,
         // negative cache entry. If invalid, all other fields are invalid
         val invalid: Boolean,
-        // The time the solution was created, as millisec from Unix epoch
+        // The time the solution was created, as milliseconds from Unix epoch
         val modTime: Long,
         // Set iff. !invalid
         val solution: Solution?

@@ -67,3 +67,26 @@ fun writeFileAtomic(path: File, contents: ByteArray) {
     }
     tmpPath.renameTo(path)
 }
+
+
+// Remove the extension from the given path.
+// If the path's filename is missing '.',
+// it returns the path itself.
+//
+// Example:
+//   removeExt(File(x, "bar.jpg") -> File(x, "bar")
+private fun removeExt(path: File): File {
+    val name = path.name
+    val i = name.lastIndexOf('.')
+    if (i < 0) return path
+    val basename = name.substring(0, i)
+    return File(path.parent, basename)
+}
+
+// Replace the extension of the given file.
+// Example:
+//   replaceExt(File("foo/bar.com"), ".exe") -> File("foo/bar.exe")
+fun replaceExt(path: File, ext: String): File {
+    val basename = removeExt(path)
+    return File(basename.parentFile, basename.name + ext)
+}

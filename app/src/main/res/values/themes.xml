@@ -4,8 +4,12 @@
         <item name="android:textColor">@color/black</item>
         <item name="textColor">@color/black</item>
 
-        <!-- button color
-        <item name="android:textColorPrimary">@color/white</item> -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryDark">@color/primaryDark</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorAccent">@color/secondaryDark</item>
+
+        <item name="android:textColorPrimary">@color/white</item>
 
         <!-- style of the hamburger menu in the toolbar -->
         <item name="drawerArrowStyle">@style/DrawerArrowStyle</item>

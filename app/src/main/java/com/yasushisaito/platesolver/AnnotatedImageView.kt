@@ -233,7 +233,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     }
 
     fun setMatchedStarsDisplayFraction(fraction: Double) {
-        assert(fraction >= 0.0 && fraction <= 1.0) { Log.e(TAG, "Bad fraction $fraction") }
+        assert(fraction in 0.0..1.0) { Log.e(TAG, "Bad fraction $fraction") }
         if (fraction != matchedStarsDisplayFraction) {
             matchedStarsDisplayFraction = fraction
             invalidate()
@@ -325,7 +325,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 -20f, -20f,
                 solution,
                 canvasDim,
-                scaleFactor,
                 paint,
                 canvas,
             )
@@ -334,7 +333,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 20f, -20f,
                 solution,
                 canvasDim,
-                scaleFactor,
                 paint,
                 canvas,
             )
@@ -343,7 +341,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 -20f, 20f,
                 solution,
                 canvasDim,
-                scaleFactor,
                 paint,
                 canvas,
             )
@@ -355,7 +352,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 20f, 20f,
                 solution,
                 canvasDim,
-                scaleFactor,
                 paint,
                 canvas,
             )
@@ -369,7 +365,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         baseY: Float,
         solution: Solution,
         canvasDim: CanvasDimension,
-        scaleFactor: Float,
         paint: Paint,
         canvas: Canvas
     ) {
@@ -425,8 +420,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         }
         if (optionalSolution == null) return null
         val solution = optionalSolution!!
-        val MAX_RADIUS2 = 400.0
-        var minDist: Double = MAX_RADIUS2
+        var minDist = 400.0 // match a DSO only within a 20px radius.
         val nToSearch = ceil(labelPlacements.size * matchedStarsDisplayFraction).toInt()
 
         var nearestDso: WellKnownDso? = null
@@ -464,7 +458,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 for (name in dso.names) {
                     buf.append("${name}<br>")
                 }
-                buf.append("ra: %s<br>dec: %s".format(
+                buf.append("RA: %s<br>Dec: %s".format(
                     rightAscensionToString(dso.cel.ra),
                     declinationToString(dso.cel.dec)))
                 buf.toString()
@@ -475,7 +469,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                     CanvasDimension(width, height))
                 val cel = solution.pixelToCelestial(p)
                 val buf = StringBuilder()
-                buf.append("ra: %s<br>dec: %s".format(
+                buf.append("RA: %s<br>Dec: %s".format(
                     rightAscensionToString(cel.ra),
                     declinationToString(cel.dec)))
                 buf.toString()
