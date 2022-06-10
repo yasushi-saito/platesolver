@@ -263,7 +263,6 @@ class RunAstapFragment : Fragment() {
     private var dialog: AstapRunnerDialogFragment? = null
 
     private val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
-        Log.d(TAG, "handler $msg dialog=$dialog")
         when (msg.what) {
             EVENT_MESSAGE -> {
                 dialog?.setMessage(msg.obj as String)

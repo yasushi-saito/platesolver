@@ -87,21 +87,18 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         starDbZipPath = File(getStarDbDir(requireContext(), STARDB_NAME), "h17.zip")
         downloadStarDbButton = view.findViewById(R.id.button_settings_download_stardb)
-        val starDbInstalled =  isStarDbInstalled(requireContext(), STARDB_NAME)
 
         downloadStarDbButton.setOnClickListener {
             when (downloadState.status) {
                 DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> {
-                    if (starDbInstalled) {
+                    if (isStarDbInstalled(requireContext(), STARDB_NAME)) {
                         val dialog = AlertDialog.Builder(requireContext())
                             .setMessage("Do you really want to delete the local copy of the database and reinstall?")
                             .setTitle("Reinstall star DB")
                             .setPositiveButton(R.string.reinstall, { dialog, which ->
-                                Log.d(TAG, "reinstall start")
                                 startDownloadStarDb()
                             })
                             .setNegativeButton(R.string.cancel, { dialog, which ->
-                                Log.d(TAG, "reinstall canceled")
                             }).create()
                         dialog.show()
                     } else {

@@ -130,7 +130,6 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
 
 // Serializes DSOs in a file in a fast binary format.
 private fun writeCache(dso: WellKnownDsoSet, cachePath: File) {
-    Log.d(TAG, "writeCache: dumping dso objects in $cachePath")
     val bos = ByteArrayOutputStream()
     val out = ObjectOutputStream(bos)
     out.writeObject(dso)
@@ -146,10 +145,7 @@ private fun readCache(cachePath: File): WellKnownDsoSet? {
         FileInputStream(cachePath).use { fd ->
             val stream = ObjectInputStream(BufferedInputStream(fd))
             val dso = stream.readObject() as WellKnownDsoSet
-            Log.d(
-                TAG,
-                "readCache: successfully read dso objects with ${dso.entries.size} entries from $cachePath"
-            )
+            Log.d(TAG, "readCache: read DSOs with size ${dso.entries.size} from $cachePath")
             return dso
         }
     } catch (ex: Exception) {
