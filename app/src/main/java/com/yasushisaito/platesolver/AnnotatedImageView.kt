@@ -456,7 +456,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 for (name in dso.names) {
                     buf.append("<b>${name}</b><br>")
                 }
-                buf.append("RA: %s<br>Dec: %s".format(
+                buf.append("RA: <b>%s</b><br>Dec: <b>%s</b>".format(
                     rightAscensionToString(dso.cel.ra),
                     declinationToString(dso.cel.dec)))
                 buf.toString()
@@ -467,7 +467,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                     CanvasDimension(width, height))
                 val cel = solution.pixelToCelestial(p)
                 val buf = StringBuilder()
-                buf.append("RA: %s<br>Dec: %s".format(
+                buf.append("RA: <b>%s</b><br>Dec: <b>%s</b>".format(
                     rightAscensionToString(cel.ra),
                     declinationToString(cel.dec)))
                 buf.toString()
