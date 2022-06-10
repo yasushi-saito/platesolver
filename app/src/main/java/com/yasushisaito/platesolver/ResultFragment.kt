@@ -45,7 +45,7 @@ class ResultFragment : Fragment() {
         val modTime = Instant.ofEpochMilli(imagePath.lastModified())
         setText(R.id.text_result_imagelastupdate, modTime.toString())
         setText(R.id.text_result_imagename, solution.imageName)
-        setText(R.id.text_result_fov_deg, "%.02f".format(solution.params.fovDeg))
+        setText(R.id.text_result_fov_deg, "%.02f".format(solution.trueFovDeg))
 
         class SeekBarListener : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {

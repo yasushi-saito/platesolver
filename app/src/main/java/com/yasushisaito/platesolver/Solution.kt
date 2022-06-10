@@ -7,7 +7,13 @@ import java.io.FileReader
 data class Solution(
     val version: String,
     val params: SolverParameters,
-    val imageName: String, // The user-defined filename of the image
+    // The true FOV of the image, as reported in astap_cli stderr.
+    // Unit is degrees [0-180].
+    // The value is typically different from params.fov, which is the
+    // user-reported FOV value.
+    val trueFovDeg: Double,
+    // The user-defined filename of the image
+    val imageName: String,
     val imageDimension: ImageDimension,
     val refPixel: PixelCoordinate,
     val refWcs: CelestialCoordinate,
@@ -15,7 +21,7 @@ data class Solution(
     val matchedStars: ArrayList<WellKnownDso>,
 ) {
     companion object {
-        const val CURRENT_VERSION = "20220529"
+        const val CURRENT_VERSION = "20220609"
     }
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 

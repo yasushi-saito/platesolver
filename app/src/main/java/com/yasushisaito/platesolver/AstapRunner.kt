@@ -131,6 +131,14 @@ class AstapRunner(
                     validMatchedStars.add(m)
                 }
 
+                // Grep the stdout for string "Warning scale was inaccurate! Set FOV=1.86d, scale=5.0"
+                val trueFovRe = Regex("Set FOV=([0-9e.]+)d")
+                var trueFovDeg = solverParams.fovDeg
+                trueFovRe.find(String(result.stdout))?.let {
+                    val (trueFovStr) = it.destructured
+                    trueFovDeg = trueFovStr.toDouble()
+                }
+
                 val solution = Solution(
                     version = Solution.CURRENT_VERSION,
                     params = solverParams,
@@ -139,7 +147,8 @@ class AstapRunner(
                     imageDimension = dim,
                     imageName = imageName,
                     pixelToWcsMatrix = pixelToWcsMatrix,
-                    matchedStars = validMatchedStars
+                    matchedStars = validMatchedStars,
+                    trueFovDeg=trueFovDeg
                 )
                 val js = Gson().toJson(solution)
                 Log.d(TAG, "writing result to $solutionJsonPath")

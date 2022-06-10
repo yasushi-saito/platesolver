@@ -7,10 +7,7 @@ import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.ScaleGestureDetector
-import android.view.View
+import android.view.*
 import com.skydoves.balloon.Balloon
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -295,6 +292,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             }
 
             paint.color = context.getColor(R.color.imageAnnotationColor)
+
             val nStarsToShow = ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
             for (i in 0 until nStarsToShow) {
                 val e = solution.matchedStars[i]
@@ -456,7 +454,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             val message = if (dso != null) {
                 val buf = StringBuilder()
                 for (name in dso.names) {
-                    buf.append("${name}<br>")
+                    buf.append("<b>${name}</b><br>")
                 }
                 buf.append("RA: %s<br>Dec: %s".format(
                     rightAscensionToString(dso.cel.ra),
@@ -482,6 +480,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 .setText(message)
                 .setTextSize(16f)
                 .setTextColor(Color.BLACK)
+                .setTextGravity(Gravity.LEFT)
                 .setTextIsHtml(true)
                 .setBackgroundColor(Color.WHITE)
                 .setAutoDismissDuration(3000L)

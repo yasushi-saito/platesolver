@@ -20,6 +20,6 @@
 
          https://stackoverflow.com/questions/9469174/set-theme-for-a-fragment
          -->
-    <color name="imageAnnotationColor">#FFB0E0E0</color>
+    <color name="imageAnnotationColor">#d0d0d0</color>
 
 </resources>
