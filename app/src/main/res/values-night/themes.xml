@@ -17,7 +17,8 @@
     </style>
 
     <style name="HeaderText" parent="android:Widget.TextView">
-        <item name="android:textStyle">bold</item>
+        <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/lightGray</item>
     </style>
 
     <style name="ToolBarStyle" parent="Theme.AppCompat">

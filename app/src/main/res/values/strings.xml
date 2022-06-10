@@ -28,20 +28,19 @@
     <string name="running_astap">Running astap…</string>
     <string name="filename">Filename</string>
     <string name="field_of_view">Field of view</string>
-
+    <string name="mm_lens_fx">mm lens (FX), </string>
     <!-- tooltip help messages -->
     <string name="help_fov">Approximate field of view of the image. Must be set.
     </string>
     <string name="help_fov_lens">
         The focal length of the FX (35mm) lens used to produce the photo.
     </string>
-    <string name="help_fov_deg">Field of view of the image in degrees.
+    <string name="help_fov_deg">Field of view of the image, in degrees.
     </string>
 
     <string name="help_file">Pick a jpeg, png, or fits file</string>
     <string name="help_search_origin">
-        Optional. Starting the search
-        from a star or DSO that\'s
+        Optional. Setting a star or DSO that\'s
         likely in the image will make Astap run faster.
     </string>
 </resources>

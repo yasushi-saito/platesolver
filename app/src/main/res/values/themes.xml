@@ -19,6 +19,7 @@
 
     <style name="HeaderText" parent="android:Widget.TextView">
         <item name="android:textStyle">normal</item>
+        <item name="android:textColor">@color/darkGray</item>
     </style>
 
     <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">

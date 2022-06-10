@@ -52,6 +52,7 @@
         app:layout_constraintGuide_end="283dp" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/textView2"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -100,10 +101,11 @@
         app:layout_constraintStart_toEndOf="@+id/textView3" />
 
     <TextView
+        style="@style/HeaderText"
         android:id="@+id/textView3"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="mm lens (FX), "
+        android:text="@string/mm_lens_fx"
         android:tooltipText="@string/help_fov_lens"
         android:labelFor="@id/text_astap_fov_lens"
         app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_lens"

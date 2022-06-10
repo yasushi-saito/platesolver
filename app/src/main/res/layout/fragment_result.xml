@@ -14,7 +14,7 @@
         android:layout_width="117dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
-        android:text="deg"
+        android:text="@string/degree"
         app:layout_constraintBaseline_toBaselineOf="@+id/text_result_fov_deg"
         app:layout_constraintStart_toEndOf="@+id/text_result_fov_deg" />
 
@@ -139,7 +139,7 @@
 
     <TextView
         android:id="@+id/textView6"
-        style="@style/BodyText"
+        style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/fewer"
@@ -148,7 +148,7 @@
 
     <TextView
         android:id="@+id/textView7"
-        style="@style/BodyText"
+        style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/more"
