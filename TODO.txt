@@ -1,1 +1,3 @@
 Select stars vs nonstars
+
+The drawer menu text is unreadable for selected fragment in dark theme.
