@@ -41,8 +41,15 @@ private fun getErrorReasonString(code: Int): String {
 class SettingsFragment : Fragment() {
     companion object {
         const val TAG = "SettingsFragment"
+
+        // List of events sent from a DB installation thread to the UI thread.
+        //
+        // Change the downloadState. Arg is DownloadState.
         const val EVENT_SET_STATE = 1
+        // Set the download status message. Arg is string.
         const val EVENT_MESSAGE = 2
+        // Switch to RunAstapFragment. Arg is unused.
+        const val EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT = 3
 
         const val INVALID_DOWNLOAD_ID: Long = -1
 
@@ -140,6 +147,11 @@ class SettingsFragment : Fragment() {
             }
             EVENT_MESSAGE -> {
                 Toast.makeText(requireContext(), msg.obj as? String, Toast.LENGTH_LONG).show()
+            }
+            EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT -> {
+                val ft = requireActivity().supportFragmentManager.beginTransaction()
+                ft.replace(R.id.content_frame, RunAstapFragment())
+                ft.commit()
             }
         }
         return@Handler true
@@ -310,6 +322,9 @@ class SettingsFragment : Fragment() {
                         val readyPath = File(starDbZipPath.parentFile, "ready.txt")
                         readyPath.writeBytes("ready".toByteArray())
                         sendMessage(DownloadStatus.DONE, "Stardb installed successfully")
+                        eventHandler.sendMessage(
+                            Message.obtain(eventHandler, EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT, null)
+                        )
                     } catch (ex: Exception) {
                         Log.e(TAG, "expand: exception $ex")
                         sendMessage(DownloadStatus.ERROR, "exception: $ex")

@@ -4,6 +4,14 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        debug {
+            storeFile file('/home/saito/AndroidKeystore/upload.jks')
+            storePassword '0G;chojin'
+            keyAlias 'upload'
+            keyPassword '0G;chojin'
+        }
+    }
     compileSdk 31
 
     defaultConfig {

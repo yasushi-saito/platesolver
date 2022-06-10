@@ -152,7 +152,7 @@ class RunAstapFragment : Fragment() {
         imageView = view.findViewById(R.id.view_astap_image)
         fovDegEdit = view.findViewById(R.id.text_astap_fov_deg)
         fovLensEdit = view.findViewById(R.id.text_astap_fov_lens)
-        searchStartEdit = view.findViewById(R.id.autocomplete_astap_searchstart)
+        searchStartEdit = view.findViewById(R.id.autocomplete_astap_search_origin)
         searchStartRaDecView = view.findViewById(R.id.text_setup_searchstart_ra_dec)
 
         // Handle FOV degree changes

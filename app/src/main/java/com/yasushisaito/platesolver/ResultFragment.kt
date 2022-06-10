@@ -39,7 +39,7 @@ class ResultFragment : Fragment() {
 
         setText(
             R.id.text_result_imagedimension,
-            "%d*%d".format(solution.imageDimension.width, solution.imageDimension.height)
+            "%dw %dh".format(solution.imageDimension.width, solution.imageDimension.height)
         )
         val imagePath = File(solution.params.imagePath)
         val modTime = Instant.ofEpochMilli(imagePath.lastModified())

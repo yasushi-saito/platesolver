@@ -18,7 +18,7 @@
     </style>
 
     <style name="HeaderText" parent="android:Widget.TextView">
-        <item name="android:textStyle">bold</item>
+        <item name="android:textStyle">normal</item>
     </style>
 
     <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
