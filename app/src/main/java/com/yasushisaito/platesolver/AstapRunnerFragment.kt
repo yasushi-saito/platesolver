@@ -338,14 +338,12 @@ class RunAstapFragment : Fragment() {
                 File(getSolutionDir(activity), "${solverParams.hashString()}.json")
 
             // Try reading the json file. Note that readSolution will raise exception on any error
-            if (false) {
-                try {
-                    readSolution(solutionJsonPath)
-                    sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
-                    return@Runnable
-                } catch (ex: Exception) {
-                    Log.d(TAG, "Could not read $solutionJsonPath: $ex; Running astap")
-                }
+            try {
+                readSolution(solutionJsonPath)
+                sendMessage(EVENT_SHOW_SOLUTION, solutionJsonPath.absolutePath as Any)
+                return@Runnable
+            } catch (ex: Exception) {
+                Log.d(TAG, "Could not read $solutionJsonPath: $ex; Running astap")
             }
             try {
                 sendMessage(EVENT_MESSAGE, "Running astap...")

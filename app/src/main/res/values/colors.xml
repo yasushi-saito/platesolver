@@ -15,6 +15,7 @@
     <color name="secondaryLight">#ff6eaf</color>
 
     <color name="accent">#b5ad18</color>
+
     <!-- used by texts and lines to mark star / dso locations on an image
          This color doesn't depend on themes, since images are always near black
 

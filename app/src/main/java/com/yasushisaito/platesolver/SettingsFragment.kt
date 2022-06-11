@@ -102,11 +102,9 @@ class SettingsFragment : Fragment() {
                         val dialog = AlertDialog.Builder(requireContext())
                             .setMessage("Do you really want to delete the local copy of the database and reinstall?")
                             .setTitle("Reinstall star DB")
-                            .setPositiveButton(R.string.reinstall, { dialog, which ->
-                                startDownloadStarDb()
-                            })
-                            .setNegativeButton(R.string.cancel, { dialog, which ->
-                            }).create()
+                            .setPositiveButton(R.string.reinstall) { _, _ -> startDownloadStarDb() }
+                            .setNegativeButton(R.string.cancel) { _, _ -> }
+                            .create()
                         dialog.show()
                     } else {
                         startDownloadStarDb()
@@ -166,9 +164,7 @@ class SettingsFragment : Fragment() {
             )
             eventHandler.postDelayed(this, 2000)
             if (!cursor.moveToFirst()) return
-            @SuppressLint("Range")
-            val status = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
-            when (status) {
+            when (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
                     eventHandler.removeCallbacks(this)
                     Log.d(TAG, "done downloading $starDbZipPath")

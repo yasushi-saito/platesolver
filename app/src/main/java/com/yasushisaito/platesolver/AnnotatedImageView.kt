@@ -13,9 +13,9 @@ import kotlin.math.ceil
 import kotlin.math.cos
 import kotlin.math.sin
 
+// Represents a circle with a text label in a canvas
 private data class LabelCircle(
-    val centerX: Double,
-    val centerY: Double,
+    val center: CanvasCoordinate,
     val radius: Double,
     val label: String
 ) {
@@ -24,34 +24,34 @@ private data class LabelCircle(
     }
 
     fun overlaps(r: LabelRect): Boolean {
-        return (centerX >= r.minX - radius &&
-                centerX <= r.maxX + radius &&
-                centerY >= r.minY - radius &&
-                centerY <= r.maxY + radius)
+        return (center.x >= r.min.x - radius &&
+                center.x <= r.max.x + radius &&
+                center.y >= r.min.y - radius &&
+                center.y <= r.max.y + radius)
 
     }
 }
 
+// Represents a rectangle with a text label in a canvas.
 private data class LabelRect(
-    val minX: Double,
-    val minY: Double,
-    val maxX: Double,
-    val maxY: Double,
+    val min: CanvasCoordinate, // upper left corner
+    val max: CanvasCoordinate, // lower right corner
     val label: String
 ) {
     init {
-        assert(minX <= maxX) { Log.e("LabelRect", "$minX $maxX") }
-        assert(minY <= maxY) { Log.e("LabelRect", "$minY $maxY") }
+        assert(min.x <= max.x) { Log.e("LabelRect", "$min $max") }
+        assert(min.y <= max.y) { Log.e("LabelRect", "$min $max") }
     }
 
     fun overlaps(r: LabelRect): Boolean {
-        return (minX < r.maxX &&
-                maxX > r.minX &&
-                minY < r.maxY &&
-                maxY > r.minY)
+        return (min.x < r.max.x &&
+                max.x > r.min.x &&
+                min.y < r.max.y &&
+                max.y > r.min.y)
     }
 }
 
+// Detects overlaps among circles and rectangles.
 private class ConflictDetector {
     private val circles = ArrayList<LabelCircle>()
     private val rects = ArrayList<LabelRect>()
@@ -64,6 +64,9 @@ private class ConflictDetector {
         rects.add(r)
     }
 
+    // Checks if the given rectanble overlaps circles and rectangles
+    // added through addCircle and addRect. Returns a score (>=0). Score of zero means
+    // no overlap was found. The larger the score, the more overlaps.
     fun findOverlaps(r: LabelRect): Double {
         var n = 0.0
         for (c in circles) {
@@ -80,7 +83,7 @@ private class ConflictDetector {
     }
 }
 
-// Defines the canvas location of a star label
+// Defines location of a star label within a canvas.
 private data class LabelPlacement(
     // The location of the circle that marks the star or nebula
     val circle: LabelCircle,
@@ -92,9 +95,9 @@ private data class LabelPlacement(
     val labelOffY: Double,
 )
 
-// Compute the locations of DSO (deep sky object) labels.
+// Compute the locations of stars and DSO (deep sky object) labels.
 // They are placed close to their location in the image,
-// and preferably they don't overlap.
+// and preferably they avoid overlapping with each other.
 private fun placeDsoLabels(
     solution: Solution,
     paint: Paint,
@@ -108,7 +111,7 @@ private fun placeDsoLabels(
     for (e in solution.matchedStars) {
         val name = e.names[0]
         val c = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
-        conflictDetector.addCircle(LabelCircle(c.x, c.y, circleRadius, label = name))
+        conflictDetector.addCircle(LabelCircle(c, circleRadius, label = name))
     }
 
     val distsFromCenter = arrayOf(8.0, 24.0, 40.0, 56.0)
@@ -150,10 +153,8 @@ private fun placeDsoLabels(
                 // label to its top edge.
                 val offY = if (baseY >= 0) -textBounds.height().toDouble() else 0.0
                 val rect = LabelRect(
-                    minX = minX + offX,
-                    minY = minY + offY,
-                    maxX = maxX + offX,
-                    maxY = maxY + offY,
+                    min = CanvasCoordinate(minX + offX, minY + offY),
+                    max = CanvasCoordinate(maxX + offX, maxY + offY),
                     label = name
                 )
                 val score = conflictDetector.findOverlaps(rect)
@@ -170,7 +171,7 @@ private fun placeDsoLabels(
         val center = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
         placements.add(
             LabelPlacement(
-                circle = LabelCircle(center.x, center.y, circleRadius, label = name),
+                circle = LabelCircle(center, circleRadius, label = name),
                 label = bestRect,
                 labelOffX = -bestOffX,
                 labelOffY = -bestOffY
@@ -180,16 +181,21 @@ private fun placeDsoLabels(
     return placements
 }
 
+// A view that shows the user-uploaded image superimposed with names of the stars and DSOs
+// contained within.
+//
 // https://stackoverflow.com/questions/55257981/how-to-fix-pinch-zoom-focal-point-in-a-custom-view
 class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(context, attributes) {
     private val paint = Paint() // Paint object for coloring shapes
 
-    // Detector for scaling gestures.
+    // Detector for pinch-zooming gestures.
     private val scaleDetector = ScaleGestureDetector(context, ScaleListener())
-    // Detector for panning & clicks.
+
+    // Detector for panning & long clicks.
     private val gestureDetector = GestureDetector(context, GestureListener())
+
     // Fraction of solution.matchedStars that are shown.
-    // Darker objects will be hidden with small fraction values.
+    // Fainter objects will be hidden with small fraction values.
     // Value must be in range [0, 1].
     private var matchedStarsDisplayFraction = 1.0
 
@@ -206,6 +212,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     // The image to show.
     private var optionalImageBitmap: Bitmap? = null
+
     // The star / dso labels to show.
     private var optionalSolution: Solution? = null
 
@@ -291,9 +298,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 assert(labelPlacements.size == optionalSolution!!.matchedStars.size)
             }
 
-            paint.color = context.getColor(R.color.imageAnnotationColor)
+            paint.color = Color.parseColor("#b0b0b0")
 
-            val nStarsToShow = ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
+            val nStarsToShow =
+                ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
             for (i in 0 until nStarsToShow) {
                 val e = solution.matchedStars[i]
                 val placement = labelPlacements[i]
@@ -301,18 +309,18 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = 4f / scaleFactor
                 canvas.drawLine(
-                    placement.circle.centerX.toFloat(),
-                    placement.circle.centerY.toFloat(),
-                    (placement.label.minX + placement.labelOffX).toFloat(),
-                    (placement.label.minY + placement.labelOffY).toFloat(),
+                    placement.circle.center.x.toFloat(),
+                    placement.circle.center.y.toFloat(),
+                    (placement.label.min.x + placement.labelOffX).toFloat(),
+                    (placement.label.min.y + placement.labelOffY).toFloat(),
                     paint
                 )
 
                 paint.style = Paint.Style.FILL
                 canvas.drawText(
                     e.names[0],
-                    placement.label.minX.toFloat(),
-                    placement.label.maxY.toFloat(),
+                    placement.label.min.x.toFloat(),
+                    placement.label.max.y.toFloat(),
                     paint
                 )
             }
@@ -412,9 +420,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private fun findNearestDso(
         labelPlacements: ArrayList<LabelPlacement>,
         canvasX: Double, canvasY: Double,
-        matchedStarsDisplayFraction: Double) : WellKnownDso? {
-        val distanceSquared = fun (x0: Double, y0: Double, x1: Double, y1: Double): Double {
-            return (x0-x1)*(x0-x1) + (y0-y1)*(y0-y1)
+        matchedStarsDisplayFraction: Double
+    ): WellKnownDso? {
+        val distanceSquared = fun(x0: Double, y0: Double, x1: Double, y1: Double): Double {
+            return (x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1)
         }
         if (optionalSolution == null) return null
         val solution = optionalSolution!!
@@ -422,10 +431,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         val nToSearch = ceil(labelPlacements.size * matchedStarsDisplayFraction).toInt()
 
         var nearestDso: WellKnownDso? = null
-        for (i in 0 until nToSearch-1) {
+        for (i in 0 until nToSearch - 1) {
             val dso = solution.matchedStars[i]
             val p = labelPlacements[i]
-            val d = distanceSquared(p.circle.centerX, p.circle.centerY, canvasX, canvasY)
+            val d = distanceSquared(p.circle.center.x, p.circle.center.y, canvasX, canvasY)
             if (d < minDist) {
                 minDist = d
                 nearestDso = dso
@@ -436,11 +445,14 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(e0: MotionEvent, e1: MotionEvent, dX: Float, dY: Float): Boolean {
+            // Panning.
             translationMatrix.postTranslate(-dX, -dY)
             invalidate()
             return true
         }
+
         override fun onLongPress(e: MotionEvent) {
+            // Show a balloon help containing the name(s) and RA/Dec of the matched star (or DSO).
             if (optionalSolution == null) return
             val solution = optionalSolution!!
             val im = Matrix()
@@ -450,26 +462,34 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             val dso = findNearestDso(
                 labelPlacements,
                 coord[0].toDouble(), coord[1].toDouble(),
-                matchedStarsDisplayFraction)
+                matchedStarsDisplayFraction
+            )
             val message = if (dso != null) {
                 val buf = StringBuilder()
                 for (name in dso.names) {
                     buf.append("<b>${name}</b><br>")
                 }
-                buf.append("RA: <b>%s</b><br>Dec: <b>%s</b>".format(
-                    rightAscensionToString(dso.cel.ra),
-                    declinationToString(dso.cel.dec)))
+                buf.append(
+                    "RA: <b>%s</b><br>Dec: <b>%s</b>".format(
+                        rightAscensionToString(dso.cel.ra),
+                        declinationToString(dso.cel.dec)
+                    )
+                )
                 buf.toString()
             } else {
                 val p = convertCanvasToPixel(
                     CanvasCoordinate(coord[0].toDouble(), coord[1].toDouble()),
                     solution.imageDimension,
-                    CanvasDimension(width, height))
+                    CanvasDimension(width, height)
+                )
                 val cel = solution.pixelToCelestial(p)
                 val buf = StringBuilder()
-                buf.append("RA: <b>%s</b><br>Dec: <b>%s</b>".format(
-                    rightAscensionToString(cel.ra),
-                    declinationToString(cel.dec)))
+                buf.append(
+                    "RA: <b>%s</b><br>Dec: <b>%s</b>".format(
+                        rightAscensionToString(cel.ra),
+                        declinationToString(cel.dec)
+                    )
+                )
                 buf.toString()
             }
             // https://medium.com/swlh/a-lightweight-tooltip-popup-for-android-ef9484a992d7
@@ -499,5 +519,4 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             return true
         }
     }
-
 }
