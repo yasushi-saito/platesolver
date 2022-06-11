@@ -110,7 +110,7 @@ private fun placeDsoLabels(
 
     for (e in solution.matchedStars) {
         val name = e.names[0]
-        val c = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
+        val c = solution.toPixelCoordinate(e.cel).toCanvasCoordinate(imageDim, canvasDim)
         conflictDetector.addCircle(LabelCircle(c, circleRadius, label = name))
     }
 
@@ -127,7 +127,7 @@ private fun placeDsoLabels(
         val name = e.names[0]
 
         paint.getTextBounds(name, 0, name.length, textBounds)
-        val c = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
+        val c = solution.toPixelCoordinate(e.cel).toCanvasCoordinate(imageDim, canvasDim)
 
         // Try a few points to place the label. Stop if we find a point what doesn't overlap
         // with existing labels. If all points overlap with existing labels, pick the one
@@ -168,7 +168,7 @@ private fun placeDsoLabels(
             }
         }
         conflictDetector.addRect(bestRect!!)
-        val center = convertPixelToCanvas(solution.celestialToPixel(e.cel), imageDim, canvasDim)
+        val center = solution.toPixelCoordinate(e.cel).toCanvasCoordinate(imageDim, canvasDim)
         placements.add(
             LabelPlacement(
                 circle = LabelCircle(center, circleRadius, label = name),
@@ -269,16 +269,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         //canvas.translate(canvasX, canvasY)
 
         // Preserve the aspect ratio of the original image.
-        val canvasImageRect = convertPixelToCanvas(
-            PixelCoordinate(
-                imageBitmap.width.toDouble(),
-                imageBitmap.height.toDouble(),
-                //solution.imageDimension.width.toDouble(),
-                // solution.imageDimension.height.toDouble()
-            ),
-            imageDim,
-            canvasDim
-        )
+        val canvasImageRect = PixelCoordinate(
+            imageBitmap.width.toDouble(),
+            imageBitmap.height.toDouble()
+        ).toCanvasCoordinate(imageDim, canvasDim)
         canvas.drawBitmap(
             imageBitmap,
             Rect(0, 0, imageBitmap.width, imageBitmap.height),
@@ -374,7 +368,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         paint: Paint,
         canvas: Canvas
     ) {
-        val c = solution.pixelToCelestial(px)
+        val c = solution.toCelestialCoordinate(px)
         // https://stackoverflow.com/questions/6756975/draw-multi-line-text-to-canvas
         val texts = c.toDisplayString().split("\n")
         var textWidth = -1
@@ -387,8 +381,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
 
         val offX = if (baseX >= 0) 0.0 else textWidth.toDouble()
         val offY = if (baseY >= 0) -textHeight.toDouble() else 0.0
-        val cx =
-            convertPixelToCanvas(px, imageDim = solution.imageDimension, canvasDim = canvasDim)
+        val cx = px.toCanvasCoordinate(imageDim = solution.imageDimension, canvasDim = canvasDim)
 
         var y = cx.y + baseY - offY
         for (text in texts) {
@@ -477,12 +470,11 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 )
                 buf.toString()
             } else {
-                val p = convertCanvasToPixel(
-                    CanvasCoordinate(coord[0].toDouble(), coord[1].toDouble()),
+                val p = CanvasCoordinate(coord[0].toDouble(), coord[1].toDouble()).toPixelCoordinate(
                     solution.imageDimension,
                     CanvasDimension(width, height)
                 )
-                val cel = solution.pixelToCelestial(p)
+                val cel = solution.toCelestialCoordinate(p)
                 val buf = StringBuilder()
                 buf.append(
                     "RA: <b>%s</b><br>Dec: <b>%s</b>".format(

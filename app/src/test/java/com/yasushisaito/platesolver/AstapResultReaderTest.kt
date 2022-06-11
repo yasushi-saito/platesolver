@@ -13,8 +13,8 @@ const val TAG = "AstapResultReaderTest"
  */
 class AstapResultReaderTest {
     fun testRoundTrip(w: Solution, x: Double, y: Double) {
-        val wcs = w.pixelToCelestial(PixelCoordinate(x, y))
-        val pix = w.celestialToPixel(wcs)
+        val wcs = w.toCelestialCoordinate(PixelCoordinate(x, y))
+        val pix = w.toPixelCoordinate(wcs)
         println("Roundtrip: org=($x,$y) wcs=$wcs pix=$pix")
         assertEquals(pix.x, x, 1.0)
         assertEquals(pix.y, y, 1.0)
@@ -40,6 +40,7 @@ class AstapResultReaderTest {
                 refWcs=refCel,
                 imageDimension = dim,
                 pixelToWcsMatrix = pixelToWcsMatrix,
+                trueFovDeg=3.0,
                 matchedStars = ArrayList())
 
             assertEquals(8.0, wcs.getDouble("BITPIX"), 1e-6)

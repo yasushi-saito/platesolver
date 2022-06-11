@@ -108,7 +108,7 @@ class AstapRunner(
                 var maxDec = -Double.MAX_VALUE
 
                 val updateRange = fun(px: PixelCoordinate) {
-                    val cel = convertPixelToCelestial(px, dim, refPixel, refCel, pixelToWcsMatrix)
+                    val cel = px.toCelestialCoordinate(dim, refPixel, refCel, pixelToWcsMatrix)
                     if (minRa > cel.ra) minRa = cel.ra
                     if (maxRa < cel.ra) maxRa = cel.ra
                     if (minDec > cel.dec) minDec = cel.dec
@@ -125,8 +125,7 @@ class AstapRunner(
                 // Since the image rectangle may not be aligned with the wcs coordinate system,
                 // findInRange will report stars outside the image rectangle. Remove them.
                 for (m in allMatchedStars) {
-                    val px =
-                        convertCelestialToPixel(m.cel, dim, refPixel, refCel, wcsToPixelMatrix)
+                    val px = m.cel.toPixelCoordinate(dim, refPixel, refCel, wcsToPixelMatrix)
                     if (px.x < 0.0 || px.x >= dim.width || px.y < 0.0 || px.y >= dim.height) continue
                     validMatchedStars.add(m)
                 }

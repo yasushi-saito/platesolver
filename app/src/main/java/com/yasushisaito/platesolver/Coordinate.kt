@@ -9,7 +9,38 @@ import kotlin.math.*
 // x is in range [0, image width).
 // y is in range [0, image height).
 // (0,0) is at the upper left corner of the image.
-data class PixelCoordinate(val x: Double, val y: Double) : Serializable
+data class PixelCoordinate(val x: Double, val y: Double) : Serializable {
+    fun toCanvasCoordinate(
+        imageDim: ImageDimension,
+        canvasDim: CanvasDimension,
+    ): CanvasCoordinate {
+        val canvasImageDim = canvasImageDimension(imageDim, canvasDim)
+        return CanvasCoordinate(
+            x / imageDim.width * canvasImageDim.x,
+            y / imageDim.height * canvasImageDim.y
+        )
+    }
+
+    // Convert pixel coordinate to celestial one. Inverse of CelestialCoordinate.toPixelCoordinate.
+    //
+    // https://sourceforge.net/p/astap-program/discussion/general/thread/6eed679fcc/
+    fun toCelestialCoordinate(
+        imageDimension: ImageDimension,
+        refPixel: PixelCoordinate,
+        refCel: CelestialCoordinate,
+        matrix: Matrix22): CelestialCoordinate {
+        val d = matrix.multiply(Vector2(
+            (x - refPixel.x) / PIXEL_BIN_FACTOR,
+            (imageDimension.height - y - refPixel.y) / PIXEL_BIN_FACTOR))
+        val dRa = d.x
+        val dDec =  d.y
+        val delta = cosDeg(refCel.dec) - dDec * sinDeg(refCel.dec)
+        val gamma = sqrt(dRa * dRa + delta * delta)
+        val ra = refCel.ra + radianToDeg(atan2(dRa, delta))
+        val dec = radianToDeg(atan((sinDeg(refCel.dec) + dDec * cosDeg(refCel.dec)) / gamma))
+        return CelestialCoordinate(ra=ra, dec=dec)
+    }
+}
 
 // The astronomical coordinate.
 data class CelestialCoordinate(
@@ -17,6 +48,21 @@ data class CelestialCoordinate(
     val ra: Double,
     // Declination, in range [-90, 90].
     val dec: Double) : Serializable {
+
+    // Translate this coordinate to the pixel coordinate. Inverse of PixelCoordinate.toCelestialCoordinate.
+    // Arg "matrix" should be the inverse of that passed to convertPixelToWcs.
+    //
+    // https://sourceforge.net/p/astap-program/discussion/general/thread/6eed679fcc/
+    fun toPixelCoordinate(imageDimension: ImageDimension,
+                          refPixel: PixelCoordinate,
+                          refCel: CelestialCoordinate,
+                          matrix: Matrix22): PixelCoordinate {
+        val h = sinDeg(dec)*sinDeg(refCel.dec) + cosDeg(dec)*cosDeg(refCel.dec)*cosDeg(ra-refCel.ra)
+        val dRa = (cosDeg(dec)*sinDeg(ra-refCel.ra)) / h
+        val dDec = (sinDeg(dec)*cosDeg(refCel.dec)-cosDeg(dec)*sinDeg(refCel.dec)*cosDeg(ra-refCel.ra)) / h
+        val d = matrix.multiply(Vector2(dRa, dDec))
+        return PixelCoordinate(x=refPixel.x + d.x * PIXEL_BIN_FACTOR, y=imageDimension.height - (d.y * PIXEL_BIN_FACTOR + refPixel.y))
+    }
 
     fun toDisplayString(): String {
         return "RA: %s\nDec: %s".format(
@@ -32,7 +78,18 @@ data class ImageDimension(val width: Int, val height: Int)
 data class CanvasDimension(val width: Int, val height: Int)
 
 // Coordinate within a canvas. (0, 0) is at the upper left corner of the image.
-data class CanvasCoordinate(val x: Double, val y: Double)
+data class CanvasCoordinate(val x: Double, val y: Double) {
+    fun toPixelCoordinate(
+        imageDim: ImageDimension,
+        canvasDim: CanvasDimension,
+    ): PixelCoordinate {
+        val canvasImageDim = canvasImageDimension(imageDim, canvasDim)
+        return PixelCoordinate(
+            x / canvasImageDim.x * imageDim.width,
+            y / canvasImageDim.y * imageDim.height,
+        )
+    }
+}
 
 // Convert an RA value in range [0,360) to an "XhYmZs" string.
 fun rightAscensionToString(ra: Double): String {
@@ -66,6 +123,7 @@ private fun cosDeg(deg: Double): Double {
 //private val PIXEL_BIN_FACTOR = 57.5
 private const val PIXEL_BIN_FACTOR = 180 / Math.PI // ??
 
+/*
 // Convert pixel coordinate to WCS.
 //
 // https://sourceforge.net/p/astap-program/discussion/general/thread/6eed679fcc/
@@ -102,6 +160,7 @@ fun convertCelestialToPixel(wcs: CelestialCoordinate,
     val d = matrix.multiply(Vector2(dRa, dDec))
     return PixelCoordinate(x=refPixel.x + d.x * PIXEL_BIN_FACTOR, y=imageDimension.height - (d.y * PIXEL_BIN_FACTOR + refPixel.y))
 }
+*/
 
 // Compute the part of the canvas that shows the image.
 // The returned value is the bottom right corner of the rectangle.
@@ -109,39 +168,13 @@ private fun canvasImageDimension(
     imageDim: ImageDimension,
     canvasDim: CanvasDimension): CanvasCoordinate {
     // Preserve the aspect ratio of the original image.
-    val imageAspectRatio = imageDim.width / imageDim.height
-    val canvasAspectRatio = canvasDim.width / canvasDim.height
+    val imageAspectRatio = imageDim.width.toDouble() / imageDim.height.toDouble()
+    val canvasAspectRatio = canvasDim.width.toDouble() / canvasDim.height.toDouble()
 
-    // Size of the subpart of the canvas that's used to draw the bitmap
     if (imageAspectRatio > canvasAspectRatio) {
         // If the image is horizontally oblong
         return CanvasCoordinate(canvasDim.width.toDouble(), canvasDim.width.toDouble() / imageAspectRatio)
     }
     // The image is vertically oblong
-    return CanvasCoordinate(canvasDim.height.toDouble(), canvasDim.height.toDouble() * imageAspectRatio)
+    return CanvasCoordinate(canvasDim.height.toDouble() * imageAspectRatio, canvasDim.height.toDouble())
 }
-
-fun convertPixelToCanvas(
-    p: PixelCoordinate,
-    imageDim: ImageDimension,
-    canvasDim: CanvasDimension,
-): CanvasCoordinate {
-    val canvasImageDim = canvasImageDimension(imageDim, canvasDim)
-    return CanvasCoordinate(
-        p.x / imageDim.width * canvasImageDim.x,
-        p.y / imageDim.height * canvasImageDim.y
-    )
-}
-
-fun convertCanvasToPixel(
-    c: CanvasCoordinate,
-    imageDim: ImageDimension,
-    canvasDim: CanvasDimension,
-): PixelCoordinate {
-    val canvasImageDim = canvasImageDimension(imageDim, canvasDim)
-    return PixelCoordinate(
-        c.x / canvasImageDim.x * imageDim.width,
-        c.y / canvasImageDim.y * imageDim.height,
-    )
-}
-

@@ -32,13 +32,13 @@ data class Solution(
     }
 
     // Convert a pixel to celestial coordinate.
-    fun pixelToCelestial(p: PixelCoordinate): CelestialCoordinate {
-        return convertPixelToCelestial(p, imageDimension, refPixel, refWcs, pixelToWcsMatrix)
+    fun toCelestialCoordinate(p: PixelCoordinate): CelestialCoordinate {
+        return p.toCelestialCoordinate(imageDimension, refPixel, refWcs, pixelToWcsMatrix)
     }
 
     // Convert a celestial to pixel coordinate. Inverse of pixelToCelestial.
-    fun celestialToPixel(wcs: CelestialCoordinate): PixelCoordinate {
-        return convertCelestialToPixel(wcs, imageDimension, refPixel, refWcs, wcsToPixelMatrix)
+    fun toPixelCoordinate(wcs: CelestialCoordinate): PixelCoordinate {
+        return wcs.toPixelCoordinate(imageDimension, refPixel, refWcs, wcsToPixelMatrix)
     }
 }
 
