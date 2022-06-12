@@ -220,17 +220,24 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private var offImageTextColor = getColorInTheme(context, R.attr.textColor)
 
     private val translationMatrix = Matrix()
+    private var imageChanged = false
 
     // Tmp used to get the scale factor from translationMatrix.
     private val tmpMatrixValues = FloatArray(9)
 
-    fun setImage(path: String) {
+    private fun internalSetImage(path: String) {
         optionalImageBitmap = BitmapFactory.decodeFile(path)
+        imageChanged = true
+        Log.d(TAG, "SETIMAGE: $width $height")
+    }
+
+    fun setImage(path: String) {
+        internalSetImage(path)
         invalidate()
     }
 
     fun setSolution(s: Solution) {
-        optionalImageBitmap = BitmapFactory.decodeFile(s.params.imagePath)
+        internalSetImage(s.params.imagePath)
         optionalSolution = s
         labelPlacements.clear()
         invalidate()
@@ -250,6 +257,17 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         if (optionalImageBitmap == null) return
         val imageBitmap = optionalImageBitmap!!
 
+        val canvasDim = CanvasDimension(width, height)
+        val imageDim = ImageDimension(imageBitmap.width, imageBitmap.height)
+
+        // compute the part of the canvas that shows the image.
+        // It preserves the aspect ratio of the image.
+        val canvasImageRect = PixelCoordinate(
+            imageBitmap.width.toDouble(),
+            imageBitmap.height.toDouble()
+        ).toCanvasCoordinate(imageDim, canvasDim)
+
+
         // Get the scale (magnification) factor.
         // X and Y scales are the same, so it suffices to get the X scale factor.
         translationMatrix.getValues(tmpMatrixValues)
@@ -259,20 +277,23 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         paint.color = offImageTextColor
         paint.textSize = TEXT_SIZE / scaleFactor
 
-        val canvasDim = CanvasDimension(width, height)
-        val imageDim = ImageDimension(imageBitmap.width, imageBitmap.height)
+        if (imageChanged) {
+            // Loaded a new image.
+            // Reset the scale factor and center the initial image.
+            translationMatrix.set(Matrix())
+            val canvasCenterX = width / 2f
+            val canvasCenterY = height / 2f
+            val canvasImageCenterX = canvasImageRect.x.toFloat() / 2f
+            val canvasImageCenterY = canvasImageRect.y.toFloat() / 2f
+            translationMatrix.postTranslate(
+                canvasCenterX - canvasImageCenterX,
+                canvasCenterY - canvasImageCenterY)
+
+            imageChanged = false
+        }
+
         canvas.concat(translationMatrix)
 
-        //canvas.scale(scaleFactor, scaleFactor) // Scale the canvas according to scaleFactor
-
-        // Just draw a bunch of circles (this is for testing panning and zooming
-        //canvas.translate(canvasX, canvasY)
-
-        // Preserve the aspect ratio of the original image.
-        val canvasImageRect = PixelCoordinate(
-            imageBitmap.width.toDouble(),
-            imageBitmap.height.toDouble()
-        ).toCanvasCoordinate(imageDim, canvasDim)
         canvas.drawBitmap(
             imageBitmap,
             Rect(0, 0, imageBitmap.width, imageBitmap.height),
@@ -281,7 +302,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         )
 
         optionalSolution?.let { solution ->
-            if (labelPlacements.isEmpty()) { // The first call, or the scaleFactor changed.
+            if (labelPlacements.isEmpty()) { // The first call to this function, or scaleFactor changed.
                 labelPlacements = placeDsoLabels(
                     solution = optionalSolution!!,
                     canvasDim = canvasDim,
