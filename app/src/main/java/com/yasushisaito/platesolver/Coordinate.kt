@@ -1,5 +1,7 @@
 package com.yasushisaito.platesolver
 
+import java.io.ObjectInputStream
+import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.lang.Math
 import kotlin.math.*
@@ -47,8 +49,20 @@ data class CelestialCoordinate(
     // Right ascension, in range [0, 360).
     val ra: Double,
     // Declination, in range [-90, 90].
-    val dec: Double) : Serializable {
+    val dec: Double) {
 
+    fun serialize(out: ObjectOutputStream) {
+        out.writeDouble(ra)
+        out.writeDouble(dec)
+    }
+
+    companion object {
+        fun deserialize(stream: ObjectInputStream): CelestialCoordinate {
+            val ra = stream.readDouble()
+            val dec = stream.readDouble()
+            return CelestialCoordinate(ra, dec)
+        }
+    }
     // Translate this coordinate to the pixel coordinate. Inverse of PixelCoordinate.toCelestialCoordinate.
     // Arg "matrix" should be the inverse of that passed to convertPixelToWcs.
     //

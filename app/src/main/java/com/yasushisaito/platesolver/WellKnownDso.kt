@@ -12,6 +12,8 @@ private const val TAG = "WellKnownDso"
 // Max number of DSOs to return in findInRange.
 private const val MAX_HITS = 100
 
+const val WELL_KNOWN_DSO_CACHE_VERSION = "20220612"
+
 // Represents a well known deep sky object.
 data class WellKnownDso(
     // Gxy, OC, etc.
@@ -23,10 +25,37 @@ data class WellKnownDso(
     // List of names. An DSO may have multiple names, e.g., "M42", "NGC1976", "Orion nebula".
     // The order of names in the list is unspecified.
     val names: List<String>
-) : Serializable {
+) {
+    companion object {
+        fun deserialize(stream: ObjectInputStream): WellKnownDso {
+            val typ = stream.readUTF()
+            val n = stream.read()
+            val names = ArrayList<String>(n)
+            for (i in 0 until n) {
+                names.add(stream.readUTF())
+            }
+            val cel = CelestialCoordinate.deserialize(stream)
+            val mag = stream.readDouble()
+            return WellKnownDso(
+                typ = typ,
+                names = names,
+                cel = cel,
+                mag = mag)
+        }
+    }
     override fun toString(): String {
         val namesString = names.joinToString("/")
         return "DeepSkyEntry(wcs=$cel names=$namesString)"
+    }
+
+    fun serialize(out: ObjectOutputStream) {
+        out.writeUTF(typ)
+        out.write(names.size)
+        for (name in names) {
+            out.writeUTF(name)
+        }
+        cel.serialize(out)
+        out.writeDouble(mag)
     }
 }
 
@@ -66,7 +95,6 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
         fun startLoadSingleton(assets: AssetManager, cacheDir: File) {
             val findWellKnownDsoFilename = fun(): String {
                 val filenames = assets.list("")
-                Log.d(TAG, "assets: $filenames")
                 for (f in filenames!!) {
                     if (f.startsWith("wellknowndso_")) {
                         return f
@@ -132,8 +160,14 @@ data class WellKnownDsoSet(val entries: ArrayList<WellKnownDso>) : Serializable 
 private fun writeCache(dso: WellKnownDsoSet, cachePath: File) {
     val bos = ByteArrayOutputStream()
     val out = ObjectOutputStream(bos)
-    out.writeObject(dso)
+    Log.d(TAG, "writeCache: start $cachePath")
+    out.writeUTF(WELL_KNOWN_DSO_CACHE_VERSION)
+    out.writeInt(dso.entries.size)
+    for (e in dso.entries) {
+        e.serialize(out)
+    }
     out.flush()
+    Log.d(TAG, "writeCache: done $cachePath")
     writeFileAtomic(cachePath, bos.toByteArray())
     Log.d(TAG, "writeCache: dumped dso objects in $cachePath")
 }
@@ -142,11 +176,22 @@ private fun writeCache(dso: WellKnownDsoSet, cachePath: File) {
 // Never raises exception.
 private fun readCache(cachePath: File): WellKnownDsoSet? {
     try {
+        Log.d(TAG, "readCache: start $cachePath")
         FileInputStream(cachePath).use { fd ->
             val stream = ObjectInputStream(BufferedInputStream(fd))
-            val dso = stream.readObject() as WellKnownDsoSet
-            Log.d(TAG, "readCache: read DSOs with size ${dso.entries.size} from $cachePath")
-            return dso
+
+            val version = stream.readUTF()
+            if (version != WELL_KNOWN_DSO_CACHE_VERSION) {
+                throw Exception("wrong cache version, got $version, want $WELL_KNOWN_DSO_CACHE_VERSION")
+            }
+            val n = stream.readInt()
+            val dsoList = ArrayList<WellKnownDso>(n)
+            for (i in 0 until n) {
+                dsoList.add(WellKnownDso.deserialize(stream))
+            }
+            val dsos = WellKnownDsoSet(dsoList)
+            Log.d(TAG, "readCache: read ${dsos.entries.size} DSOs from $cachePath")
+            return dsos
         }
     } catch (ex: Exception) {
         Log.d(TAG, "readCache: exception $ex")
