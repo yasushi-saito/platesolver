@@ -17,6 +17,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -157,7 +158,7 @@ class RunAstapFragment : Fragment() {
 
     private lateinit var fovDegEdit: EditText
     private lateinit var fovLensEdit: EditText
-    private lateinit var runButton: Button
+    private lateinit var runButton: FloatingActionButton
     private lateinit var searchStartEdit: AutoCompleteTextView
     private lateinit var searchStartRaDecView: TextView
 
@@ -169,6 +170,10 @@ class RunAstapFragment : Fragment() {
         fovLensEdit = view.findViewById(R.id.text_astap_fov_lens)
         searchStartEdit = view.findViewById(R.id.autocomplete_astap_search_origin)
         searchStartRaDecView = view.findViewById(R.id.text_setup_searchstart_ra_dec)
+        runButton = view.findViewById(R.id.fab_astap_run)
+        runButton.setOnClickListener {
+            onRunAstap()
+        }
 
         if (state != null) {
             fovDeg = state.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
@@ -211,10 +216,6 @@ class RunAstapFragment : Fragment() {
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
             pickFileLauncher.launch(intent)
-        }
-        runButton = view.findViewById(R.id.button_astap_run)
-        runButton.setOnClickListener {
-            onRunAstap()
         }
         updateView()
     }
@@ -280,7 +281,6 @@ class RunAstapFragment : Fragment() {
             searchStartRaDecView.text = startSearch!!.cel.toDisplayString()
         }
 
-        val runButton = view.findViewById<Button>(R.id.button_astap_run)
         runButton.isEnabled =
             isValidFovDeg(fovDeg) && imagePath != null && WellKnownDsoSet.getSingleton() != null
     }

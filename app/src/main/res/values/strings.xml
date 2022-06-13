@@ -43,4 +43,5 @@
         Optional. Setting a star or DSO that\'s
         likely in the image will make Astap run faster.
     </string>
+    <string name="help_run_astap">Run the Astap platesolver</string>
 </resources>
