@@ -8,6 +8,7 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.*
+import androidx.core.content.ContextCompat
 import com.skydoves.balloon.Balloon
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -228,7 +229,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     private fun internalSetImage(path: String) {
         optionalImageBitmap = BitmapFactory.decodeFile(path)
         imageChanged = true
-        Log.d(TAG, "SETIMAGE: $width $height")
     }
 
     fun setImage(path: String) {
@@ -254,9 +254,10 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        canvas.drawColor(Color.parseColor("#404040"))
         if (optionalImageBitmap == null) return
-        val imageBitmap = optionalImageBitmap!!
 
+        val imageBitmap = optionalImageBitmap!!
         val canvasDim = CanvasDimension(width, height)
         val imageDim = ImageDimension(imageBitmap.width, imageBitmap.height)
 

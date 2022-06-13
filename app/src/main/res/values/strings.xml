@@ -38,7 +38,7 @@
     <string name="help_fov_deg">Field of view of the image, in degrees.
     </string>
 
-    <string name="help_file">Pick a jpeg, png, or fits file</string>
+    <string name="help_file">Pick a JPEG, PNG, or FITS file</string>
     <string name="help_search_origin">
         Optional. Setting a star or DSO that\'s
         likely in the image will make Astap run faster.

@@ -54,7 +54,10 @@ class RunAstapFragment : Fragment() {
     companion object {
         const val TAG = "RunAstapFragment"
         const val DEFAULT_FOV_DEG = 2.0
-        const val BUNDLE_KEY_FOV_DEG = "fovDeg"
+        const val BUNDLE_KEY_FOV_DEG = "FOV_DEG"
+        const val BUNDLE_KEY_SEARCH_ORIGIN = "SEARCH_ORIGIN"
+        const val BUNDLE_KEY_IMAGE_PATH = "IMAGE_PATH"
+        const val BUNDLE_KEY_IMAGE_FILENAME = "IMAGE_FILENAME"
 
         const val EVENT_MESSAGE = 0
         const val EVENT_ERROR_MESSAGE = 2
@@ -78,6 +81,7 @@ class RunAstapFragment : Fragment() {
 
     private var fovDeg: Double = DEFAULT_FOV_DEG
     private var startSearch: WellKnownDso? = null
+    private var startSearchName: String? = null
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
         val launch =
@@ -116,13 +120,24 @@ class RunAstapFragment : Fragment() {
         }.start()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putDouble(BUNDLE_KEY_FOV_DEG, fovDeg)
+        startSearch?.let {
+            outState.putString(BUNDLE_KEY_SEARCH_ORIGIN, it.names[0])
+        }
+        imagePath?.let {
+            outState.putString(BUNDLE_KEY_IMAGE_PATH, it.absolutePath)
+        }
+        imageFilename.let {
+            outState.putString(BUNDLE_KEY_IMAGE_FILENAME, it)
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        state: Bundle?
     ): View {
-        if (savedInstanceState != null) {
-            fovDeg = savedInstanceState.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
-        }
         WellKnownDsoSet.registerOnSingletonLoaded {
             sendMessage(
                 EVENT_WELLKNOWNDSO_LOADED,
@@ -146,8 +161,8 @@ class RunAstapFragment : Fragment() {
     private lateinit var searchStartEdit: AutoCompleteTextView
     private lateinit var searchStartRaDecView: TextView
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+    override fun onViewCreated(view: View, state: Bundle?) {
+        super.onViewCreated(view, state)
         thisView = view
         imageView = view.findViewById(R.id.view_astap_image)
         fovDegEdit = view.findViewById(R.id.text_astap_fov_deg)
@@ -155,35 +170,43 @@ class RunAstapFragment : Fragment() {
         searchStartEdit = view.findViewById(R.id.autocomplete_astap_search_origin)
         searchStartRaDecView = view.findViewById(R.id.text_setup_searchstart_ra_dec)
 
+        if (state != null) {
+            fovDeg = state.getDouble(BUNDLE_KEY_FOV_DEG, DEFAULT_FOV_DEG)
+            startSearchName = state.getString(BUNDLE_KEY_SEARCH_ORIGIN)
+            state.getString(BUNDLE_KEY_IMAGE_PATH)?.let {
+                imagePath = File(it)
+                imageView.setImage(it)
+            }
+            imageFilename = state.getString(BUNDLE_KEY_IMAGE_FILENAME)
+        }
+
         // Handle FOV degree changes
         setOnChangeListener(fovDegEdit) { edit ->
-            var deg = 0.0
             try {
-                deg = edit.text.toString().toDouble()
-            } catch (e: Exception) {
-            }
-            if (isValidFovDeg(deg)) {
-                fovDeg = deg
-            }
-            updateView()
-        }
-        // Handle FOV lens focal length changes
-        setOnChangeListener(fovLensEdit) { edit ->
-            var mm = 0.0
-            try {
-                mm = edit.text.toString().toDouble()
-            } catch (e: Exception) {
-            }
-            if (mm > 0 || mm < 10000) {
-                val deg = focalLengthToFov(mm)
+                val deg = edit.text.toString().toDouble()
                 if (isValidFovDeg(deg)) {
                     fovDeg = deg
                 }
+                updateView()
+            } catch (ex: Exception) {
             }
-            updateView()
         }
-        val pickFileButton = view.findViewById<Button>(R.id.button_astap_pick_file)
-        pickFileButton.setOnClickListener {
+        // Handle FOV lens focal length changes
+        setOnChangeListener(fovLensEdit) { edit ->
+            try {
+                val mm = edit.text.toString().toDouble()
+                if (mm > 0 || mm < 10000) {
+                    val deg = focalLengthToFov(mm)
+                    if (isValidFovDeg(deg)) {
+                        fovDeg = deg
+                        updateView()
+                    }
+                }
+            } catch (e: Exception) {
+            }
+        }
+        val fileButton = view.findViewById<Button>(R.id.button_astap_pick_file)
+        fileButton.setOnClickListener {
             val intent = Intent()
                 .setType("*/*")
                 .setAction(Intent.ACTION_GET_CONTENT)
@@ -228,12 +251,6 @@ class RunAstapFragment : Fragment() {
             searchStartEdit.dropDownWidth = 400
             setOnChangeListener(searchStartEdit) {
                 startSearch = wellKnownDsoNameMap[searchStartEdit.text.toString()]
-                if (startSearch == null) {
-                    searchStartEdit.setText("")
-                    searchStartRaDecView.text = ""
-                } else {
-                    searchStartRaDecView.text = startSearch!!.cel.toDisplayString()
-                }
             }
         }
 
@@ -255,6 +272,14 @@ class RunAstapFragment : Fragment() {
             imageNameText.text = ""
             setEditable(false)
         }
+
+        if (startSearch == null) {
+            searchStartEdit.setText("")
+            searchStartRaDecView.text = ""
+        } else {
+            searchStartRaDecView.text = startSearch!!.cel.toDisplayString()
+        }
+
         val runButton = view.findViewById<Button>(R.id.button_astap_run)
         runButton.isEnabled =
             isValidFovDeg(fovDeg) && imagePath != null && WellKnownDsoSet.getSingleton() != null
@@ -278,6 +303,9 @@ class RunAstapFragment : Fragment() {
             }
             EVENT_WELLKNOWNDSO_LOADED -> {
                 Log.d(TAG, "wellknowndso loaded")
+                startSearchName?.let {
+                    startSearch = WellKnownDsoSet.getSingleton()!!.findByName(it)
+                }
                 updateView()
             }
             EVENT_SHOW_DIALOG -> {

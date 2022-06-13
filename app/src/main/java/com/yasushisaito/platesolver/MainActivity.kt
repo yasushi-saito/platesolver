@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -49,8 +50,24 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var pastSolutionsSubmenu: SubMenu
     private lateinit var solutionSet: SolutionSet
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        var n = 0
+        for (frag in supportFragmentManager.fragments) {
+            if (frag != null && frag.isVisible()) {
+                val type = getFragmentType(frag)
+                outState.putString("FRAG_${n}", type.name)
+                frag.arguments?.let {
+                    outState.putBundle("ARG_${n}", it)
+                }
+                n++
+            }
+            outState.putInt("N_FRAGS", n)
+        }
+    }
+
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
         setContentView(R.layout.activity_main)
         val toolbar = findViewById<View>(R.id.toolbar) as Toolbar
         setSupportActionBar(toolbar)
@@ -71,17 +88,26 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         solutionSet = SolutionSet.getSingleton(getSolutionDir(this))
         refreshSolutionMenuItems()
 
-        val fragment = when {
-            isStarDbInstalled(this, STARDB_ANY) -> {
-                RunAstapFragment()
+        if (state != null) {
+            val n = state.getInt("N_FRAGS")
+            val ft = supportFragmentManager.beginTransaction()
+            for (i in 0 until n) {
+                val fragName = state.getString("FRAG_${i}")!!
+                val frag = newFragment(FragmentType.valueOf(fragName))
+                state.getBundle("ARG_${i}").let {
+                    frag.arguments = it
+                }
+                ft.add(R.id.content_frame, frag, fragName)
             }
-            else -> {
-                SettingsFragment()
+        } else {
+            val ft = supportFragmentManager.beginTransaction()
+            val frag = when {
+                isStarDbInstalled(this, STARDB_ANY) -> RunAstapFragment()
+                else -> SettingsFragment()
             }
+            ft.replace(R.id.content_frame, frag, getFragmentType(frag).name)
+            ft.commit()
         }
-        val ft = supportFragmentManager.beginTransaction()
-        ft.add(R.id.content_frame, fragment)
-        ft.commit()
 
         WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
     }

@@ -21,6 +21,7 @@
 
          https://stackoverflow.com/questions/9469174/set-theme-for-a-fragment
          -->
-    <color name="imageAnnotationColor">#d0d0d0</color>
-
+    <color name="imageAnnotation">#d0d0d0</color>
+    <!-- canvas color outside the image region -->
+    <color name="imageBackground">#808080</color>
 </resources>
