@@ -16,7 +16,7 @@
     </style>
 
     <style name="EditText" parent="android:Widget.EditText">
-        <item name="android:textColor">@color/edit_text_selector</item>>
+        <item name="android:textColor">@color/edit_text</item>>
         <item name="android:minHeight">52dp</item>
     </style>
 
