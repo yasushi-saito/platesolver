@@ -17,6 +17,7 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
 import java.util.concurrent.locks.ReentrantLock
@@ -139,6 +140,7 @@ class RunAstapFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         state: Bundle?
     ): View {
+        Log.d(TAG, "oncreateview")
         WellKnownDsoSet.registerOnSingletonLoaded {
             sendMessage(
                 EVENT_WELLKNOWNDSO_LOADED,
@@ -423,11 +425,13 @@ class RunAstapFragment : Fragment() {
 
     private fun startSolutionFragment(solutionJsonPath: String) {
         val bundle = Bundle()
-        bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, solutionJsonPath)
-        val fragment = ResultFragment()
-        fragment.arguments = bundle
-        val ft = parentFragmentManager.beginTransaction()
-        ft.replace(R.id.content_frame, fragment)
-        ft.commit()
+        bundle.putString(FRAGMENT_ARG_SOLUTION_JSON_PATH, solutionJsonPath)
+        val frag = findOrCreateFragment(parentFragmentManager, FragmentType.Result, bundle)
+        val fragName = getFragmentType(frag).name
+        parentFragmentManager.commit {
+            replace(R.id.content_frame, frag, fragName)
+            setReorderingAllowed(true)
+            addToBackStack(fragName)
+        }
     }
 }

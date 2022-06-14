@@ -5,7 +5,6 @@ import android.app.AlertDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.PersistableBundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -20,6 +19,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import com.google.android.material.navigation.NavigationView
 import java.io.File
 import java.io.InputStream
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         super.onSaveInstanceState(outState)
         var n = 0
         for (frag in supportFragmentManager.fragments) {
-            if (frag != null && frag.isVisible()) {
+            if (frag != null && frag.isVisible) {
                 val type = getFragmentType(frag)
                 outState.putString("FRAG_${n}", type.name)
                 frag.arguments?.let {
@@ -90,23 +90,30 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
         if (state != null) {
             val n = state.getInt("N_FRAGS")
-            val ft = supportFragmentManager.beginTransaction()
-            for (i in 0 until n) {
-                val fragName = state.getString("FRAG_${i}")!!
-                val frag = newFragment(FragmentType.valueOf(fragName))
-                state.getBundle("ARG_${i}").let {
-                    frag.arguments = it
+            supportFragmentManager.commit {
+                setReorderingAllowed(true)
+                for (i in 0 until n) {
+                    val fragName = state.getString("FRAG_${i}")!!
+                    val args = state.getBundle("ARG_${i}")
+                    val frag = findOrCreateFragment(
+                        supportFragmentManager,
+                        FragmentType.valueOf(fragName),
+                        args
+                    )
+                    add(R.id.content_frame, frag, fragName)
                 }
-                ft.add(R.id.content_frame, frag, fragName)
             }
         } else {
-            val ft = supportFragmentManager.beginTransaction()
             val frag = when {
-                isStarDbInstalled(this, STARDB_ANY) -> RunAstapFragment()
-                else -> SettingsFragment()
+                isStarDbInstalled(this, STARDB_ANY) -> findOrCreateFragment(supportFragmentManager, FragmentType.RunAstap, null)
+                else -> findOrCreateFragment(supportFragmentManager, FragmentType.Settings, null)
             }
-            ft.replace(R.id.content_frame, frag, getFragmentType(frag).name)
-            ft.commit()
+            val fragName = getFragmentType(frag).name
+            supportFragmentManager.commit {
+                replace(R.id.content_frame, frag, fragName)
+                setReorderingAllowed(true)
+                addToBackStack(fragName)
+            }
         }
 
         WellKnownDsoSet.startLoadSingleton(assets, getWellKnownDsoCacheDir(this))
@@ -188,8 +195,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         val fragment: Fragment? = when {
-            item.itemId == R.id.nav_run_astap -> RunAstapFragment()
-            item.itemId == R.id.nav_settings -> SettingsFragment()
+            item.itemId == R.id.nav_run_astap -> findOrCreateFragment(supportFragmentManager, FragmentType.RunAstap, null)
+            item.itemId == R.id.nav_settings -> findOrCreateFragment(supportFragmentManager, FragmentType.Settings, null)
             item.itemId >= SOLUTION_MENU_ITEM_ID && item.itemId < SOLUTION_MENU_ITEM_ID + SolutionSet.MAX_ENTRIES -> {
                 val id = item.itemId - SOLUTION_MENU_ITEM_ID
                 val e = solutionSet.findWithId(id)
@@ -203,9 +210,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     null
                 } else {
                     val bundle = Bundle()
-                    bundle.putString(ResultFragment.BUNDLE_KEY_SOLUTION_JSON_PATH, e.jsonPath.absolutePath)
-                    val fragment = ResultFragment()
-                    fragment.arguments = bundle
+                    bundle.putString(FRAGMENT_ARG_SOLUTION_JSON_PATH, e.jsonPath.absolutePath)
+                    val fragment = findOrCreateFragment(supportFragmentManager, FragmentType.Result, bundle)
                     fragment
                 }
             }
@@ -213,9 +219,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
         if (fragment == null) return true
 
-        val ft = supportFragmentManager.beginTransaction()
-        ft.replace(R.id.content_frame, fragment)
-        ft.commit()
+        val fragName = getFragmentType(fragment).name
+        supportFragmentManager.commit {
+            replace(R.id.content_frame, fragment, fragName)
+            setReorderingAllowed(true)
+            addToBackStack(fragName)
+        }
 
         val drawer = findViewById<View>(R.id.layout_drawer) as DrawerLayout
         drawer.closeDrawer(GravityCompat.START)

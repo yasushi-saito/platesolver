@@ -18,6 +18,7 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.commit
 import java.io.File
 
 // Given a DownloadManager error code from COLUMN_REASON, report its
@@ -147,9 +148,14 @@ class SettingsFragment : Fragment() {
                 Toast.makeText(requireContext(), msg.obj as? String, Toast.LENGTH_LONG).show()
             }
             EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT -> {
-                val ft = requireActivity().supportFragmentManager.beginTransaction()
-                ft.replace(R.id.content_frame, RunAstapFragment())
-                ft.commit()
+                val fm = requireActivity().supportFragmentManager
+                val frag = findOrCreateFragment(fm, FragmentType.RunAstap, null)
+                val fragName = getFragmentType(frag).name
+                fm.commit {
+                    replace(R.id.content_frame, frag, fragName)
+                    setReorderingAllowed(true)
+                    addToBackStack(fragName)
+                }
             }
         }
         return@Handler true

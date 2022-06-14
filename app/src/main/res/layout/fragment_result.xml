@@ -91,7 +91,7 @@
         style="@style/HeaderText"
         android:layout_width="117dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="16dp"
         android:text="@string/field_of_view"
         app:layout_constraintBottom_toTopOf="@+id/label_show_objects"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0" />

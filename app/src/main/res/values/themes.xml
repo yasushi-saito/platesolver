@@ -11,6 +11,13 @@
 
         <item name="android:textColorPrimary">@color/black</item>
         <item name="android:textColorSecondary">@color/black</item>
+
+        <item name="android:editTextStyle">@style/EditText</item>
+    </style>
+
+    <style name="EditText" parent="android:Widget.EditText">
+        <item name="android:textColor">@color/edit_text_selector</item>>
+        <item name="android:minHeight">52dp</item>
     </style>
 
     <style name="RegularButton" parent="Theme.PlateSolver">
@@ -22,11 +29,11 @@
         <item name="android:textColor">@color/darkGray</item>
     </style>
 
-    <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
-        <item name="color">@android:color/white</item>
+    <style name="BodyText" parent="android:Widget.TextView">
     </style>
 
-    <style name="BodyText" parent="android:Widget.TextView">
+    <style name="DrawerArrowStyle" parent="Widget.AppCompat.DrawerArrowToggle">
+        <item name="color">@android:color/white</item>
     </style>
 
     <style name="ToolBarStyle" parent="Theme.AppCompat">

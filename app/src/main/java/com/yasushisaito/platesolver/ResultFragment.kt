@@ -12,18 +12,14 @@ import java.time.Instant
 
 // Fragment for showing a solution.
 class ResultFragment : Fragment() {
-    companion object {
-        const val BUNDLE_KEY_SOLUTION_JSON_PATH = "solutionJsonPath"
-    }
-
     private lateinit var solution: Solution
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val jsonPath = arguments?.getString(BUNDLE_KEY_SOLUTION_JSON_PATH)
-            ?: throw Exception("$BUNDLE_KEY_SOLUTION_JSON_PATH not found")
+        val jsonPath = arguments?.getString(FRAGMENT_ARG_SOLUTION_JSON_PATH)
+            ?: throw Exception("$FRAGMENT_ARG_SOLUTION_JSON_PATH not found")
         solution = readSolution(File(jsonPath))
         return inflater.inflate(R.layout.fragment_result, container, false)
     }

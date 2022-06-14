@@ -1,25 +1,30 @@
 #!/usr/bin/python
+import struct
 import csv
+import os
 import time
 from dataclasses import dataclass
+import logging
 from typing import List
+import urllib.request
 import re
 
 HYG_DIR = "../../src/HYG-Database"
 MAX_MAGNITUDE = 13
 
 GREEK_LETTERS = {
-    'Alp': 'α',
-    'Bet': 'β',
-    'Gam': 'γ',
-    'Del': 'δ',
-    'Eps': 'ε',
-    'Zet': 'ζ',
-    'Eta': 'η',
-    'The': 'θ',
-    'Iot': 'ι',
-    'Kap': 'κ',
+    "Alp": "α",
+    "Bet": "β",
+    "Gam": "γ",
+    "Del": "δ",
+    "Eps": "ε",
+    "Zet": "ζ",
+    "Eta": "η",
+    "The": "θ",
+    "Iot": "ι",
+    "Kap": "κ",
 }
+
 
 @dataclass
 class DeepSkyObject:
@@ -30,21 +35,52 @@ class DeepSkyObject:
     names: List[str]
 
 
-digits_re = re.compile('\d+')
-spaces_re = re.compile(' +')
+digits_re = re.compile("\d+")
+spaces_re = re.compile(" +")
+
 
 def parse_bayerflamsteed(org: str) -> str:
     # Remove the numeric designation
-    s = digits_re.sub(' ', org).strip()
-    if ' ' not in s:
+    s = digits_re.sub(" ", org).strip()
+    if " " not in s:
         s = org
-    s = spaces_re.sub(' ', s).strip()
+    s = spaces_re.sub(" ", s).strip()
     return s
+
 
 def ra_to_degrees(h: float) -> float:
     """HYG database reprenets RA in [0, 24].
     Convert it to [0, 360]"""
     return h * 15
+
+
+def read_dso_nicknames():
+    """Read and parse https://www.messier.seds.org/xtra/supp/d-names.txt"""
+    cache_path = "/tmp/d-names.txt"
+    if not os.path.exists(cache_path):
+        data = urllib.request.urlopen(
+            "https://www.messier.seds.org/xtra/supp/d-names.txt"
+        ).read()
+        with open(cache_path, "wb") as fd:
+            fd.write(data)
+
+    with open(cache_path) as fd:
+        while line := fd.readline():
+            if line.startswith("______"):
+                break
+        # skip the empty line
+        fd.readline()
+        n = 0
+        while line := fd.readline():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("References and Links"):
+                break
+            n += 1
+            print(line.encode('utf-8'))
+            name =
+        logging.info(f"N={n}")
 
 
 def read_hygfull_csv() -> List[DeepSkyObject]:
@@ -111,7 +147,7 @@ def read_dso_csv() -> List[DeepSkyObject]:
 
             mag_str = line["mag"]
             if not mag_str:
-                mag = 4 # pick an arbitrary value
+                mag = 4  # pick an arbitrary value
             else:
                 mag = float(mag_str)
                 if mag > MAX_MAGNITUDE:
@@ -130,6 +166,8 @@ def read_dso_csv() -> List[DeepSkyObject]:
 
 
 def main():
+    logging.basicConfig(level=logging.INFO)
+
     dsos = read_dso_csv()
     dsos += read_hygfull_csv()
 
@@ -140,5 +178,6 @@ def main():
         for dso in dsos:
             names = "/".join(dso.names)
             fd.write(f"{dso.typ},{dso.ra},{dso.dec},{dso.mag},{names}\n")
+
 
 main()

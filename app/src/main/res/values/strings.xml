@@ -22,6 +22,7 @@
 
     <string name="degree">deg</string>
     <string name="reinstall">Reinstall</string>
+    <string name="auto">Auto</string>
 
     <string name="file">File</string>
     <string name="search_origin">Search origin</string>

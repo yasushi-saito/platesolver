@@ -21,11 +21,11 @@
 
 
     <Button
-        style="@style/RegularButton"
         android:id="@+id/button_astap_pick_file"
+        style="@style/RegularButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="16dp"
         android:text="@string/file"
         android:tooltipText="@string/help_file"
         app:layout_constraintBottom_toTopOf="@+id/label_setup_fov"
@@ -64,6 +64,7 @@
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_deg" />
 
     <EditText
+        style="@style/EditText"
         android:id="@+id/text_astap_fov_lens"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
@@ -81,13 +82,14 @@
         style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="16dp"
         android:text="@string/field_of_view"
         android:tooltipText="@string/help_fov"
         app:layout_constraintBottom_toTopOf="@+id/label_setup_search_origin"
         app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
     <EditText
+        style="@style/EditText"
         android:id="@+id/text_astap_fov_deg"
         android:layout_width="80dp"
         android:layout_height="wrap_content"
@@ -112,18 +114,6 @@
         app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_lens"
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_lens" />
 
-    <!--
-    <Button
-        android:id="@+id/button_astap_run"
-        style="@style/RegularButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/run"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
-        app:layout_constraintStart_toStartOf="parent" />-->
-
     <TextView
         android:id="@+id/text_setup_imagename"
         android:layout_width="wrap_content"
@@ -140,12 +130,14 @@
         app:constraint_referenced_ids="fragment_setup" />
 
     <AutoCompleteTextView
+        style="@style/EditText"
         android:id="@+id/autocomplete_astap_search_origin"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:imeOptions="actionNext"
         android:inputType="text"
         android:importantForAutofill="no"
+        android:hint="@string/auto"
         android:tooltipText="@string/help_search_origin"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_setup_search_origin"
         app:layout_constraintStart_toStartOf="@+id/guideline4" />
@@ -172,6 +164,7 @@
         android:id="@+id/view_astap_image"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toTopOf="@+id/button_astap_pick_file"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
