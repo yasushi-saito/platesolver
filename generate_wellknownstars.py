@@ -79,7 +79,6 @@ def read_dso_nicknames():
                 break
             n += 1
             print(line.encode('utf-8'))
-            name =
         logging.info(f"N={n}")
 
 
@@ -93,20 +92,23 @@ def read_hygfull_csv() -> List[DeepSkyObject]:
             mag_str = line["Mag"]
             if not mag_str:
                 continue
-            mag = float(mag_str)
-            if mag > MAX_MAGNITUDE:
-                continue
-
             names: List[str] = []
+            has_hd_name = False
             if name := line["ProperName"]:
                 names.append(name)
             if bfs := line["BayerFlamsteed"]:
                 names.append(parse_bayerflamsteed(bfs))
             if hd := line["HD"]:
+                has_hd_name = True
                 names.append(f"hd{hd}")
 
             if not names:
                 continue
+
+            mag = float(mag_str)
+            if not has_hd_name and mag > MAX_MAGNITUDE:
+                continue
+
 
             dsos.append(
                 DeepSkyObject(

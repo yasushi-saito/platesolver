@@ -94,6 +94,10 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         starDbZipPath = File(getStarDbDir(requireContext(), STARDB_NAME), "h17.zip")
+
+        val versionText = view.findViewById<TextView>(R.id.text_settings_version)
+        versionText.setText("Platesolver version ${BuildConfig.VERSION_NAME}")
+
         downloadStarDbButton = view.findViewById(R.id.button_settings_download_stardb)
 
         downloadStarDbButton.setOnClickListener {

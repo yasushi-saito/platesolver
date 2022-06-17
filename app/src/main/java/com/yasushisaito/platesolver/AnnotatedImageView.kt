@@ -217,9 +217,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
     // The star / dso labels to show.
     private var optionalSolution: Solution? = null
 
-    // Color of the text to be used when drawing outside the image's frame.
-    private var offImageTextColor = getColorInTheme(context, R.attr.textColor)
-
     private val translationMatrix = Matrix()
     private var imageChanged = false
 
@@ -275,8 +272,9 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
         val scaleFactor = tmpMatrixValues[Matrix.MSCALE_X]
 
         canvas.save() // save() and restore() are used to reset canvas data after each draw
-        paint.color = offImageTextColor
+        paint.color = Color.parseColor("#b0b0b0")
         paint.textSize = TEXT_SIZE / scaleFactor
+        paint.strokeWidth = 4f / scaleFactor
 
         if (imageChanged) {
             // Loaded a new image.
@@ -314,7 +312,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 assert(labelPlacements.size == optionalSolution!!.matchedStars.size)
             }
 
-            paint.color = Color.parseColor("#b0b0b0")
 
             val nStarsToShow =
                 ceil(solution.matchedStars.size * matchedStarsDisplayFraction).toInt()
@@ -323,7 +320,6 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 val placement = labelPlacements[i]
 
                 paint.style = Paint.Style.STROKE
-                paint.strokeWidth = 4f / scaleFactor
                 canvas.drawLine(
                     placement.circle.center.x.toFloat(),
                     placement.circle.center.y.toFloat(),
@@ -341,7 +337,7 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 )
             }
 
-            paint.color = offImageTextColor
+            paint.style = Paint.Style.FILL
             drawCelestialCoordinate(
                 PixelCoordinate(0.0, 0.0),
                 -20f, -20f,

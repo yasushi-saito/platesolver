@@ -298,6 +298,7 @@ class RunAstapFragment : Fragment() {
                 dialog?.setError(msg.obj as String)
             }
             EVENT_SHOW_SOLUTION -> {
+                dialog?.dismiss()
                 dialog = null
                 val activity = requireActivity() as? MainActivity
                 activity!!.refreshSolutionMenuItems()

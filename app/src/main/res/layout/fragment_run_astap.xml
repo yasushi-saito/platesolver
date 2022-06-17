@@ -132,12 +132,13 @@
     <AutoCompleteTextView
         style="@style/EditText"
         android:id="@+id/autocomplete_astap_search_origin"
+        android:hint="@string/auto"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
         android:imeOptions="actionNext"
         android:inputType="text"
         android:importantForAutofill="no"
-        android:hint="@string/auto"
+        android:singleLine="true"
         android:tooltipText="@string/help_search_origin"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_setup_search_origin"
         app:layout_constraintStart_toStartOf="@+id/guideline4" />

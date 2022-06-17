@@ -196,7 +196,9 @@ class AstapRunner(
         }
         if (solverParams.startSearch != null) {
             cmdline.add("-ra")
-            cmdline.add("%f".format(solverParams.startSearch.ra))
+            // -ra is in hours, not degrees.
+            cmdline.add("%f".format(solverParams.startSearch.ra / 360.0 * 24.0))
+            // spd is the distance from the south pole, so add 90 to the dec.
             cmdline.add("-spd")
             cmdline.add("%f".format(solverParams.startSearch.dec + 90.0))
         }
