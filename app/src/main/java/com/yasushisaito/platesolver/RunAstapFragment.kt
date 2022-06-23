@@ -9,7 +9,10 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -42,14 +45,30 @@ private fun isValidFovDeg(fovDeg: Double): Boolean {
     return fovDeg > 0 && fovDeg < 90.0
 }
 
-private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
-    edit.setOnEditorActionListener { _, actionId, _ ->
-        if (actionId == 0) cb(edit)
-        false
-    }
-    edit.setOnFocusChangeListener { _, hasFocus ->
-        if (!hasFocus) cb(edit)
-    }
+// https://stackoverflow.com/questions/9385081/how-can-i-change-the-edittext-text-without-triggering-the-text-watcher
+private fun updateEditText(edit: EditText, value: String) {
+    val focused = edit.hasFocus()
+    if (focused) edit.clearFocus()
+    edit.setText(value)
+    if (focused) edit.requestFocus()
+}
+
+private fun setOnChangeListener(edit: EditText, cb: (value: String) -> Unit) {
+    edit.setOnEditorActionListener(object: TextView.OnEditorActionListener {
+        override fun onEditorAction(p0: TextView?, p1: Int, p2: KeyEvent?): Boolean {
+            val value = edit.text.toString()
+            Log.d("EditText", "action p1=$p1 val=$value")
+            cb(value)
+            return false
+        }
+    })
+    edit.setOnFocusChangeListener(object: View.OnFocusChangeListener {
+        override fun onFocusChange(p0: View?, p1: Boolean) {
+            val value = edit.text.toString()
+            Log.d("EditText", "focus $p1 val=$value")
+            if (!p1) cb(value)
+        }
+    })
 }
 
 private fun getDbTypeFromFov(context: Context, fovDeg: Double) : String {
@@ -244,9 +263,11 @@ class RunAstapFragment : Fragment() {
         }
 
         // Handle FOV degree changes
-        setOnChangeListener(fovDegEdit) { edit ->
+        setOnChangeListener(fovDegEdit) { value ->
             try {
-                val deg = edit.text.toString().toDouble()
+                Log.d(TAG, "FovDeg: $value")
+                val deg = value.toDouble()
+                Log.d(TAG, "FovDeg: $deg $value")
                 if (isValidFovDeg(deg)) {
                     fovDeg = deg
                 }
@@ -255,9 +276,11 @@ class RunAstapFragment : Fragment() {
             }
         }
         // Handle FOV lens focal length changes
-        setOnChangeListener(fovLensEdit) { edit ->
+        setOnChangeListener(fovLensEdit) { value ->
             try {
-                val mm = edit.text.toString().toDouble()
+                Log.d(TAG, "FovMm: $value")
+                val mm = value.toDouble()
+                Log.d(TAG, "FovMm: $mm $value")
                 if (mm > 0 || mm < 10000) {
                     val deg = focalLengthToFov(mm)
                     if (isValidFovDeg(deg)) {
@@ -309,14 +332,15 @@ class RunAstapFragment : Fragment() {
             searchStartEdit.setAdapter(wellKnownDsoArray)
             searchStartEdit.dropDownWidth = 400
             setOnChangeListener(searchStartEdit) {
-                startSearch = wellKnownDsoNameMap[searchStartEdit.text.toString()]
+                startSearch = wellKnownDsoNameMap[it]
+                updateView()
             }
         }
 
-        fovDegEdit.setText("%.2f".format(fovDeg))
+        updateEditText(fovDegEdit, "%.2f".format(fovDeg))
 
         val focalLengthEdit = view.findViewById<EditText>(R.id.text_astap_fov_lens)
-        focalLengthEdit.setText("%d".format(fovToFocalLength(fovDeg).toInt()))
+        updateEditText(focalLengthEdit, "%d".format(fovToFocalLength(fovDeg).toInt()))
 
         val setEditable = fun(enabled: Boolean) {
             fovDegEdit.isEnabled = enabled
@@ -336,7 +360,7 @@ class RunAstapFragment : Fragment() {
         }
 
         if (startSearch == null) {
-            searchStartEdit.setText("")
+            updateEditText(searchStartEdit, "")
             searchStartRaDecView.text = ""
         } else {
             searchStartRaDecView.text = startSearch!!.cel.toDisplayString()
