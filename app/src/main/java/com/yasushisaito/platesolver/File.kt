@@ -20,13 +20,24 @@ fun getAstapCliPath(context: Context): File {
     return path
 }
 
-const val STARDB_DEFAULT = "h17"
-const val STARDB_ANY = STARDB_DEFAULT
+const val STARDB_H17 = "h17"
+const val STARDB_H18 = "h18"
+const val STARDB_V17 = "v17"
+const val STARDB_W08 = "w08"
+// const val STARDB_ANY = STARDB_H18
 
 // Reports the abs path of the directory containing star DB files, such as h17*.
-fun getStarDbDir(context: Context, name: String): File {
-    //return File(context.getExternalFilesDir(null), "stardb")
-    return File(context.getExternalFilesDir(null), name)
+fun getStarDbDir(context: Context, dbName: String): File {
+    return File(context.getExternalFilesDir(null), dbName)
+}
+
+fun getStarDbZipPath(context: Context, dbName: String): File {
+    return File(getStarDbDir(context, dbName), dbName + ".zip")
+}
+
+// A marker file that's created after a star DB (h17, etc) is successfully installed.
+fun getStarDbReadyPath(context: Context, dbName: String): File {
+    return File(getStarDbDir(context, dbName), "ready.txt")
 }
 
 fun isStarDbInstalled(context: Context, dbName: String): Boolean {
@@ -38,12 +49,6 @@ fun isStarDbInstalled(context: Context, dbName: String): Boolean {
         Log.d(TAG, "isStardbExpanded: exception $ex")
     }
     return false
-}
-
-// A marker file that's created after a star DB (h17, etc) is successfully installed.
-fun getStarDbReadyPath(context: Context, dbName: String): File {
-    val dir = getStarDbDir(context, dbName)
-    return File(dir, "ready.txt")
 }
 
 // Reports the directory for json files that store Solution objects.

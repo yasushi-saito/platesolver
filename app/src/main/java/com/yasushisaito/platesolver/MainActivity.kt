@@ -1,18 +1,12 @@
 package com.yasushisaito.platesolver
 
-import android.app.Activity
 import android.app.AlertDialog
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.SubMenu
 import android.view.View
-import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -21,7 +15,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.google.android.material.navigation.NavigationView
-import java.io.File
 import java.io.InputStream
 import java.security.MessageDigest
 import java.time.Instant
@@ -104,8 +97,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         } else {
+            val anyDbInstalled = (
+                    isStarDbInstalled(this, STARDB_H17) ||
+                    isStarDbInstalled(this, STARDB_H18) ||
+                    isStarDbInstalled(this, STARDB_V17))
             val frag = when {
-                isStarDbInstalled(this, STARDB_ANY) -> findOrCreateFragment(supportFragmentManager, FragmentType.RunAstap, null)
+                anyDbInstalled-> findOrCreateFragment(supportFragmentManager, FragmentType.RunAstap, null)
                 else -> findOrCreateFragment(supportFragmentManager, FragmentType.Settings, null)
             }
             val fragName = getFragmentType(frag).name
@@ -139,58 +136,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         }.start()
-    }
-
-    private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
-        val launch =
-            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result: ActivityResult? ->
-                if (result?.resultCode != Activity.RESULT_OK) {
-                    println("launch activity failed: $result")
-                    return@registerForActivityResult
-                }
-                cb(result.data!!)
-            }
-        return launch
-    }
-
-    private fun showErrorDialog(message: String) {
-        AlertDialog.Builder(this)
-            .setTitle("Error")
-            .setMessage(message)
-            .setPositiveButton("OK") { _, _ -> }.show()
-    }
-
-    private val installStarDbLauncher = newLauncher { intent: Intent ->
-        Thread(Runnable {
-            val uri: Uri = intent.data!!
-            println("install URI: $uri")
-            val outputPath = File(this.getExternalFilesDir(null), "h17.zip")
-            copyUriTo(contentResolver, uri, outputPath)
-
-            val starDbDir = getStarDbDir(this, STARDB_DEFAULT)
-            if (!starDbDir.mkdirs()) {
-                println("mkdir $starDbDir failed")
-                return@Runnable
-            }
-
-            val proc: Process = Runtime.getRuntime().exec(
-                arrayOf("unzip", outputPath.path),
-                null,
-                starDbDir
-            )
-            val exitCode = proc.waitFor()
-            if (exitCode != 0) {
-                showErrorDialog("unzip $outputPath failed")
-            }
-            println("stardb: unzipped to ${outputPath}!!!")
-        }).start()
-    }
-
-    fun onInstallStarDb(@Suppress("UNUSED_PARAMETER") unused: View) {
-        val intent = Intent()
-            .setType("application/zip")
-            .setAction(Intent.ACTION_GET_CONTENT)
-        installStarDbLauncher.launch(intent)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {

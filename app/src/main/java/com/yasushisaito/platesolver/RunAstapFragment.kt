@@ -2,6 +2,7 @@ package com.yasushisaito.platesolver
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -51,6 +52,28 @@ private fun setOnChangeListener(edit: EditText, cb: (edit: EditText) -> Unit) {
     }
 }
 
+private fun getDbTypeFromFov(context: Context, fovDeg: Double) : String {
+    var dbType = ""
+    if (getStarDbReadyPath(context, STARDB_H18).exists()) {
+        if (fovDeg <= 5.0) return STARDB_H18
+        dbType = STARDB_H18
+    }
+    if (getStarDbReadyPath(context, STARDB_H17).exists()) {
+        if (fovDeg <= 5.0) return STARDB_H17
+        if (dbType == "") dbType = STARDB_H17
+    }
+    if (getStarDbReadyPath(context, STARDB_V17).exists()) {
+        if (fovDeg <= 20.0) return STARDB_V17
+        if (dbType == "") dbType = STARDB_V17
+    }
+    if (getStarDbReadyPath(context, STARDB_W08).exists()) {
+        if (dbType == "") dbType = STARDB_W08
+    }
+    if (dbType == "") {
+        throw Exception("No star database installed")
+    }
+    return dbType
+}
 
 class RunAstapFragment : Fragment() {
     companion object {
@@ -84,6 +107,7 @@ class RunAstapFragment : Fragment() {
     private var fovDeg: Double = DEFAULT_FOV_DEG
     private var startSearch: WellKnownDso? = null
     private var startSearchName: String? = null
+    private var dbType: String? = null
 
     private fun newLauncher(cb: (Intent) -> Unit): ActivityResultLauncher<Intent> {
         val launch =
@@ -163,6 +187,7 @@ class RunAstapFragment : Fragment() {
     private lateinit var runButton: FloatingActionButton
     private lateinit var searchStartEdit: AutoCompleteTextView
     private lateinit var searchStartRaDecView: TextView
+    private lateinit var dbTypeSpinner: Spinner
 
     override fun onViewCreated(view: View, state: Bundle?) {
         super.onViewCreated(view, state)
@@ -172,6 +197,37 @@ class RunAstapFragment : Fragment() {
         fovLensEdit = view.findViewById(R.id.text_astap_fov_lens)
         searchStartEdit = view.findViewById(R.id.autocomplete_astap_search_origin)
         searchStartRaDecView = view.findViewById(R.id.text_setup_searchstart_ra_dec)
+        val dbDescriptions = ArrayList<String>() // Human-readable descriptions of star databases
+        val dbTypes = ArrayList<String?>() // STARDB_H18, STARDB_V17, etc. null means autodetect.
+
+        dbDescriptions.add("Auto")
+        dbTypes.add(null)
+        if (getStarDbReadyPath(requireContext(), STARDB_H18).exists()) {
+            dbDescriptions.add(requireContext().getString(R.string.h18))
+            dbTypes.add(STARDB_H18)
+        }
+        if (getStarDbReadyPath(requireContext(), STARDB_H17).exists()) {
+            dbDescriptions.add(requireContext().getString(R.string.h17))
+            dbTypes.add(STARDB_H17)
+        }
+        if (getStarDbReadyPath(requireContext(), STARDB_V17).exists()) {
+            dbDescriptions.add(requireContext().getString(R.string.v17))
+            dbTypes.add(STARDB_V17)
+        }
+        if (getStarDbReadyPath(requireContext(), STARDB_W08).exists()) {
+            dbDescriptions.add(requireContext().getString(R.string.w08))
+            dbTypes.add(STARDB_W08)
+        }
+        dbTypeSpinner = view.findViewById(R.id.spinner_astap_db_type)
+        dbTypeSpinner.adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_dropdown_item, dbDescriptions)
+        dbTypeSpinner.onItemSelectedListener = object: AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
+                Log.d(TAG, "Selected: pos=${pos} id=${id}")
+                dbType = dbTypes[pos]
+            }
+            override fun onNothingSelected(p0: AdapterView<*>?) {}
+        }
+
         runButton = view.findViewById(R.id.fab_astap_run)
         runButton.setOnClickListener {
             onRunAstap()
@@ -262,10 +318,13 @@ class RunAstapFragment : Fragment() {
         val focalLengthEdit = view.findViewById<EditText>(R.id.text_astap_fov_lens)
         focalLengthEdit.setText("%d".format(fovToFocalLength(fovDeg).toInt()))
 
-        val setEditable = fun(value: Boolean) {
-            fovDegEdit.isEnabled = value
-            fovLensEdit.isEnabled = value
-            searchStartEdit.isEnabled = value
+        val setEditable = fun(enabled: Boolean) {
+            fovDegEdit.isEnabled = enabled
+            fovLensEdit.isEnabled = enabled
+            searchStartEdit.isEnabled = enabled
+            dbTypeSpinner.isEnabled = enabled
+            // https://stackoverflow.com/questions/7641879/how-do-i-make-a-spinners-disabled-state-look-disabled#:~:text=Since%20Android%20doesn't%20gray,out%20the%20text%20within%20it.
+            dbTypeSpinner.alpha = if (enabled) 1.0f else 0.4f
         }
         val imageNameText = view.findViewById<TextView>(R.id.text_setup_imagename)
         if (imageFilename != null) {
@@ -350,6 +409,7 @@ class RunAstapFragment : Fragment() {
         val thisImagePath = imagePath!!
         val thisImageFilename = imageFilename!!
         val thisFovDeg = fovDeg
+        val thisDbType = dbType
         val thisStartSearchDso = startSearch
 
         dialog = AstapRunnerDialogFragment(
@@ -363,8 +423,11 @@ class RunAstapFragment : Fragment() {
             searchOrigin = thisStartSearchDso?.cel
         )
         Thread(Runnable {
-            val solverParams =
-                SolverParameters(thisImagePath.absolutePath, thisFovDeg, thisStartSearchDso?.cel)
+            val solverParams = SolverParameters(
+                thisImagePath.absolutePath,
+                thisFovDeg,
+                thisStartSearchDso?.cel,
+                thisDbType ?: getDbTypeFromFov(requireContext(), thisFovDeg))
             val solutionJsonPath =
                 File(getSolutionDir(activity), "${solverParams.hashString()}.json")
 

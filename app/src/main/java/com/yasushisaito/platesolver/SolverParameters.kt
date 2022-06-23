@@ -10,7 +10,9 @@ data class SolverParameters(
     // Assumed field of view of the whole image, in degrees.
     val fovDeg: Double,
     // The (ra, dec) to start searching from.
-    val startSearch: CelestialCoordinate?) {
+    val startSearch: CelestialCoordinate?,
+    // The database name, e.g. "v17", "h18".
+    val dbName: String) {
     fun hashString(): String {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.reset()

@@ -16,13 +16,25 @@
     <string name="more">More</string>
     <string name="run">Run</string>
 
-    <string name="settings_install_stardb">Install star DB (H17)</string>
-    <string name="settings_reinstall_stardb">Reinstall star DB (H17)</string>
-    <string name="settings_retry_install_stardb">Retry install star DB (H17)</string>
+    <string name="settings_install_stardb">Install</string>
+    <string name="settings_reinstall_stardb">Reinstall</string>
+    <string name="settings_retry_install_stardb">Retry</string>
 
     <string name="degree">deg</string>
     <string name="reinstall">Reinstall</string>
     <string name="auto">Auto</string>
+
+    <string-array name="db_type">
+        <item>H18 (FoV 0.2°~10°)</item>
+        <item>V17 (FoV 1°~20°)</item>
+        <item>W08 (FoV 20°~)</item>
+    </string-array>
+
+    <string name="h18">H18 (FoV 0.2°~10°)</string>
+    <string name="h17">H17 (FoV 1°~10°)</string>
+    <string name="v17">V17 (FoV 1°~20°)</string>
+    <string name="w08">W08 (FoV 20°~)</string>
+    <string name="v17_w08">V17+W08 (FoV 1°~)</string>
 
     <string name="file">File</string>
     <string name="search_origin">Search origin</string>

@@ -13,10 +13,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
+        android:layout_marginBottom="8dp"
         android:maxLines="2"
         android:minLines="2"
-        android:text=""
-        app:layout_constraintBaseline_toBaselineOf="@+id/autocomplete_astap_search_origin"
+        android:text="placeholder"
+        app:layout_constraintBottom_toBottomOf="@+id/autocomplete_astap_search_origin"
         app:layout_constraintStart_toEndOf="@+id/autocomplete_astap_search_origin" />
 
 
@@ -53,8 +54,8 @@
         app:layout_constraintGuide_end="283dp" />
 
     <TextView
-        style="@style/HeaderText"
         android:id="@+id/textView2"
+        style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:labelFor="@id/text_astap_fov_deg"
@@ -64,8 +65,8 @@
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_deg" />
 
     <EditText
-        style="@style/EditText"
         android:id="@+id/text_astap_fov_lens"
+        style="@style/EditText"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:digits="0123456789."
@@ -89,8 +90,8 @@
         app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
     <EditText
-        style="@style/EditText"
         android:id="@+id/text_astap_fov_deg"
+        style="@style/EditText"
         android:layout_width="80dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
@@ -104,13 +105,13 @@
         app:layout_constraintStart_toEndOf="@+id/textView3" />
 
     <TextView
-        style="@style/HeaderText"
         android:id="@+id/textView3"
+        style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:labelFor="@id/text_astap_fov_lens"
         android:text="@string/mm_lens_fx"
         android:tooltipText="@string/help_fov_lens"
-        android:labelFor="@id/text_astap_fov_lens"
         app:layout_constraintBaseline_toBaselineOf="@+id/text_astap_fov_lens"
         app:layout_constraintStart_toEndOf="@+id/text_astap_fov_lens" />
 
@@ -130,14 +131,14 @@
         app:constraint_referenced_ids="fragment_setup" />
 
     <AutoCompleteTextView
-        style="@style/EditText"
         android:id="@+id/autocomplete_astap_search_origin"
-        android:hint="@string/auto"
+        style="@style/EditText"
         android:layout_width="120dp"
         android:layout_height="wrap_content"
+        android:hint="@string/auto"
         android:imeOptions="actionNext"
-        android:inputType="text"
         android:importantForAutofill="no"
+        android:inputType="text"
         android:singleLine="true"
         android:tooltipText="@string/help_search_origin"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_setup_search_origin"
@@ -148,10 +149,10 @@
         style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         android:text="@string/search_origin"
         android:tooltipText="@string/help_search_origin"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/textView11"
         app:layout_constraintStart_toStartOf="@+id/guideline3" />
 
     <androidx.constraintlayout.widget.Guideline
@@ -177,13 +178,32 @@
         android:id="@+id/fab_astap_run"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
         android:layout_gravity="end|bottom"
+        android:layout_margin="16dp"
         android:clickable="true"
+        android:contentDescription="@string/help_run_astap"
+        android:tooltipText="@string/help_run_astap"
         app:layout_constraintBottom_toBottomOf="@+id/view_astap_image"
         app:layout_constraintEnd_toEndOf="parent"
-        android:tooltipText="@string/help_run_astap"
-        android:contentDescription="@string/help_run_astap"
         app:srcCompat="@android:drawable/ic_media_play" />
+
+    <TextView
+        android:id="@+id/textView11"
+        style="@style/HeaderText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Star database"
+        app:layout_constraintBottom_toBottomOf="@+id/spinner_astap_db_type"
+        app:layout_constraintStart_toStartOf="@+id/guideline3"
+        app:layout_constraintTop_toTopOf="@+id/spinner_astap_db_type" />
+
+    <Spinner
+        android:id="@+id/spinner_astap_db_type"
+        android:layout_width="306dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:duplicateParentState="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/guideline4" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

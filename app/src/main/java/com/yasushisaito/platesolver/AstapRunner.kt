@@ -183,7 +183,7 @@ class AstapRunner(
         val cmdline = arrayListOf(
             astapPath.absolutePath,
             "-f", solverParams.imagePath,
-            "-d", getStarDbDir(context, STARDB_DEFAULT).path,
+            "-d", getStarDbDir(context, solverParams.dbName).path,
             "-fov", solverParams.fovDeg.toString(),
         )
 

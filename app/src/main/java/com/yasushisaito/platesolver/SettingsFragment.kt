@@ -13,13 +13,10 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.commit
-import java.io.File
 
 // Given a DownloadManager error code from COLUMN_REASON, report its
 // human readable description.
@@ -38,10 +35,19 @@ private fun getErrorReasonString(code: Int): String {
     }
 }
 
-// Fragment for showing a solution.
-class SettingsFragment : Fragment() {
+private class Downloader(
+    private val activity: FragmentActivity,
+    private val dbName: String,
+    // Button for starting a download.
+    private val button: Button,
+    // Circling progress widget shown while download is in progress
+    private val progressBar: ProgressBar,
+    // The location of h17.zip, etc downloaded from the web.
+    private val downloadMessageTextView: TextView,
+) {
     companion object {
-        const val TAG = "SettingsFragment"
+        const val TAG = "Downloader"
+        const val INVALID_DOWNLOAD_ID: Long = -1
 
         // List of events sent from a DB installation thread to the UI thread.
         //
@@ -51,20 +57,7 @@ class SettingsFragment : Fragment() {
         const val EVENT_MESSAGE = 2
         // Switch to RunAstapFragment. Arg is unused.
         const val EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT = 3
-
-        const val INVALID_DOWNLOAD_ID: Long = -1
-
-        // The only star database name in use now.
-        const val STARDB_NAME = STARDB_DEFAULT
     }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return inflater.inflate(R.layout.fragment_settings, container, false)
-    }
-
     private enum class DownloadStatus {
         IDLE,
         DOWNLOADING,
@@ -75,84 +68,31 @@ class SettingsFragment : Fragment() {
     }
 
     private data class DownloadState(val status: DownloadStatus, val message: String)
-
-    private var downloadState = DownloadState(DownloadStatus.IDLE, "")
-
-    // The location of h17.zip, etc downloaded from the web.
-    private lateinit var starDbZipPath: File
-    private lateinit var downloadStarDbButton: Button
-
-    // Circling progress widget shown while download is in progress
-    private lateinit var downloadProgressBar: ProgressBar
-
-    // Shows the last download status message.
-    private lateinit var downloadMessageTextView: TextView
-
-    private var downloadStarDbRequestId: Long = INVALID_DOWNLOAD_ID
-    private lateinit var downloadManager: DownloadManager
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        starDbZipPath = File(getStarDbDir(requireContext(), STARDB_NAME), "h17.zip")
-
-        val versionText = view.findViewById<TextView>(R.id.text_settings_version)
-        versionText.setText("Platesolver version ${BuildConfig.VERSION_NAME}")
-
-        downloadStarDbButton = view.findViewById(R.id.button_settings_download_stardb)
-
-        downloadStarDbButton.setOnClickListener {
-            when (downloadState.status) {
-                DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> {
-                    if (isStarDbInstalled(requireContext(), STARDB_NAME)) {
-                        val dialog = AlertDialog.Builder(requireContext())
-                            .setMessage("Do you really want to delete the local copy of the database and reinstall?")
-                            .setTitle("Reinstall star DB")
-                            .setPositiveButton(R.string.reinstall) { _, _ -> startDownloadStarDb() }
-                            .setNegativeButton(R.string.cancel) { _, _ -> }
-                            .create()
-                        dialog.show()
-                    } else {
-                        startDownloadStarDb()
-                    }
-                }
-                DownloadStatus.DOWNLOADING -> cancelDownloadStarDb()
-                else -> {
-                    Log.d(TAG, "Ignore download button event with state $downloadState")
-                }
-            }
-        }
-        downloadProgressBar = view.findViewById(R.id.progress_settings_download)
-        downloadMessageTextView = view.findViewById(R.id.text_settings_download_message)
-
-        if (isStarDbInstalled(requireContext(), STARDB_NAME)) {
-            downloadState = DownloadState(DownloadStatus.DONE, "")
-        } else if (isStardbZipDownloaded()) {
-            downloadState = DownloadState(DownloadStatus.DOWNLOADED, "")
-        }
-        downloadManager =
-            (requireActivity().getSystemService(DOWNLOAD_SERVICE) as? DownloadManager)!!
-        updateView()
-    }
+    private val context = activity
+    private val downloadManager: DownloadManager
+    private val zipPath = getStarDbZipPath(context, dbName)
+    private var state = DownloadState(DownloadStatus.IDLE, "")
+    private var requestId: Long = INVALID_DOWNLOAD_ID
 
     private val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
         Log.d(TAG, "HANDLER $msg")
         when (msg.what) {
             EVENT_SET_STATE -> {
                 val newState = msg.obj as DownloadState
-                if (newState.status <= downloadState.status) {
+                if (newState.status <= state.status) {
                     // This happens when the user presses "Cancel", and
                     // the download manager sends a message through the intent mechanism async.
                     Log.d(TAG, "Ignoring status message $newState")
                 } else {
-                    downloadState = newState
+                    state = newState
                     updateView()
                 }
             }
             EVENT_MESSAGE -> {
-                Toast.makeText(requireContext(), msg.obj as? String, Toast.LENGTH_LONG).show()
+                Toast.makeText(context, msg.obj as? String, Toast.LENGTH_LONG).show()
             }
             EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT -> {
-                val fm = requireActivity().supportFragmentManager
+                val fm = activity.supportFragmentManager
                 val frag = findOrCreateFragment(fm, FragmentType.RunAstap, null)
                 val fragName = getFragmentType(frag).name
                 fm.commit {
@@ -165,21 +105,175 @@ class SettingsFragment : Fragment() {
         return@Handler true
     }
 
+    init {
+        button.setOnClickListener {
+            when (state.status) {
+                DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> {
+                    if (isStarDbInstalled(context, dbName)) {
+                        val dialog = AlertDialog.Builder(context)
+                            .setMessage("Do you really want to delete the local copy of the database and reinstall?")
+                            .setTitle("Reinstall star DB")
+                            .setPositiveButton(R.string.reinstall) { _, _ -> startDownloadStarDb() }
+                            .setNegativeButton(R.string.cancel) { _, _ -> }
+                            .create()
+                        dialog.show()
+                    } else {
+                        startDownloadStarDb()
+                    }
+                }
+                DownloadStatus.DOWNLOADING -> cancelDownloadStarDb()
+                else -> {
+                    Log.d(TAG, "Ignore download button event with state $state")
+                }
+            }
+        }
+
+        if (isStarDbInstalled(context, dbName)) {
+            state = DownloadState(DownloadStatus.DONE, "")
+        } else if (isStardbZipDownloaded()) {
+            state = DownloadState(DownloadStatus.DOWNLOADED, "")
+        }
+        downloadManager = (activity.getSystemService(DOWNLOAD_SERVICE) as? DownloadManager)!!
+        updateView()
+    }
+
+    private fun isStardbZipDownloaded(): Boolean {
+        try {
+            return zipPath.exists()
+        } catch (ex: Exception) {
+            Log.d(TAG, "isStardbZipDownloaded: exception $ex")
+        }
+        return false
+    }
+
+    // Start downloading a database dbName.
+    private fun startDownloadStarDb() {
+        // https://medium.com/@aungkyawmyint_26195/downloading-file-properly-in-android-d8cc28d25aca
+        val srcUrl =
+            "https://github.com/yasushi-saito/platesolver-assets/raw/main/${dbName}.zip"
+
+        assert(
+            requestId == INVALID_DOWNLOAD_ID &&
+                    state.status == DownloadStatus.IDLE ||
+                    state.status == DownloadStatus.DONE ||
+                    state.status == DownloadStatus.ERROR
+        ) {
+            Log.e(TAG, "download id=$requestId state=$state")
+        }
+
+        getStarDbDir(context, dbName).mkdirs()
+
+        val readyPath = getStarDbReadyPath(context, dbName)
+        if (readyPath.exists()) {
+            Log.d(TAG, "deleting $readyPath")
+            readyPath.delete()
+        }
+        val dbZipPath =getStarDbZipPath(context, dbName)
+        if (dbZipPath.exists()) {
+            Log.d(TAG, "deleting $dbZipPath")
+            dbZipPath.delete()
+        }
+
+        val request = DownloadManager.Request(Uri.parse(srcUrl))
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)// Visibility of the download Notification
+            .setDestinationUri(Uri.fromFile(dbZipPath))
+            .setTitle("h17.zip")
+            .setDescription("Downloading ${dbName}.zip")
+            .setAllowedOverRoaming(false)
+        val downloadManager = context.getSystemService(DOWNLOAD_SERVICE) as? DownloadManager
+        state = DownloadState(DownloadStatus.DOWNLOADING, "Downloading...")
+        requestId = downloadManager!!.enqueue(request)
+        eventHandler.postDelayed(probeDownloadStatusRunner, 2000)
+
+
+        Log.d(TAG, "start downloading $srcUrl")
+        updateView()
+    }
+    // Cancel downloading H17.
+    //
+    // REQUIRES: download is currently running.
+    private fun cancelDownloadStarDb() {
+        assert(requestId != INVALID_DOWNLOAD_ID)
+        downloadManager.remove(requestId)
+        eventHandler.removeCallbacks(probeDownloadStatusRunner)
+        Log.d(TAG, "Canceled download")
+        state = DownloadState(DownloadStatus.ERROR, "Canceled")
+        updateView()
+    }
+
+    // Update the state of the button and texts to match downloadState.
+    private fun updateView() {
+        val setEditable = fun(text_id: Int, enabled: Boolean, progress: Int) {
+            button.setText(text_id)
+            button.isEnabled = enabled
+            progressBar.visibility = progress
+        }
+        Log.d(TAG, "updateView downloadState=$state")
+        downloadMessageTextView.text = state.message
+        when (state.status) {
+            DownloadStatus.IDLE -> {
+                setEditable(R.string.settings_install_stardb, true, View.INVISIBLE)
+            }
+            DownloadStatus.DOWNLOADING -> {
+                setEditable(R.string.cancel_download, true, View.VISIBLE)
+            }
+            DownloadStatus.DOWNLOADED -> {
+                setEditable(R.string.cancel_download, false, View.VISIBLE)
+
+                state = DownloadState(DownloadStatus.EXPANDING, "Expanding zip file...")
+                updateView()
+                Thread {
+                    try {
+                        val cmdline = arrayOf("unzip", "-o", zipPath.path)
+                        Log.d(TAG, "Running ${cmdline.joinToString()}")
+                        val proc = Runtime.getRuntime().exec(
+                            cmdline,
+                            null,
+                            zipPath.parentFile
+                        )
+                        val exitCode = proc.waitFor()
+                        if (exitCode != 0) {
+                            throw Exception("unzip failed with exit code $exitCode")
+                        }
+                        Log.d(TAG, "unzip finished successfully")
+                        val readyPath = getStarDbReadyPath(context, dbName)
+                        readyPath.writeBytes("ready".toByteArray())
+                        sendMessage(DownloadStatus.DONE, "Stardb installed successfully")
+                        //eventHandler.sendMessage(
+                        //Message.obtain(eventHandler, EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT, null)
+                        //)
+                    } catch (ex: Exception) {
+                        Log.e(TAG, "expand: exception $ex")
+                        sendMessage(DownloadStatus.ERROR, "exception: $ex")
+                    }
+                }.start()
+            }
+            DownloadStatus.EXPANDING -> {
+                setEditable(R.string.cancel_download, false, View.VISIBLE)
+            }
+            DownloadStatus.DONE -> {
+                setEditable(R.string.settings_reinstall_stardb, true, View.INVISIBLE)
+            }
+            DownloadStatus.ERROR -> {
+                setEditable(R.string.settings_retry_install_stardb, true, View.INVISIBLE)
+            }
+        }
+    }
     private val probeDownloadStatusRunner = object : Runnable {
         override fun run() {
-            if (downloadState.status != DownloadStatus.DOWNLOADING) return
-            assert(downloadStarDbRequestId != INVALID_DOWNLOAD_ID)
+            if (state.status != DownloadStatus.DOWNLOADING) return
+            assert(requestId != INVALID_DOWNLOAD_ID)
             val cursor = downloadManager.query(
-                DownloadManager.Query().setFilterById(downloadStarDbRequestId)
+                DownloadManager.Query().setFilterById(requestId)
             )
             eventHandler.postDelayed(this, 2000)
             if (!cursor.moveToFirst()) return
             when (cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))) {
                 DownloadManager.STATUS_SUCCESSFUL -> {
                     eventHandler.removeCallbacks(this)
-                    Log.d(TAG, "done downloading $starDbZipPath")
-                    assert(starDbZipPath.exists()) {
-                        Log.e(TAG, "Download succeeded, but file $starDbZipPath was not created")
+                    Log.d(TAG, "done downloading $zipPath")
+                    assert(zipPath.exists()) {
+                        Log.e(TAG, "Download succeeded, but file $zipPath was not created")
                     }
                     sendMessage(DownloadStatus.DOWNLOADED, "Download finished")
                 }
@@ -211,141 +305,82 @@ class SettingsFragment : Fragment() {
                         "Downloading..."
                     }
                     Log.d(TAG, "downloaded $downloadedBytes / $totalBytes")
-                    downloadState = DownloadState(DownloadStatus.DOWNLOADING, message)
+                    state = DownloadState(DownloadStatus.DOWNLOADING, message)
                     updateView()
                 }
             }
         }
     }
-
     private fun sendMessage(newStatus: DownloadStatus, message: String) {
         eventHandler.sendMessage(
             Message.obtain(eventHandler, EVENT_SET_STATE, DownloadState(newStatus, message))
         )
     }
 
-    private fun isStardbZipDownloaded(): Boolean {
-        try {
-            return starDbZipPath.exists()
-        } catch (ex: Exception) {
-            Log.d(TAG, "isStardbZipDownloaded: exception $ex")
-        }
-        return false
+}
+
+// Fragment for showing a solution.
+class SettingsFragment : Fragment() {
+    companion object {
+        const val TAG = "SettingsFragment"
+
+        // List of events sent from a DB installation thread to the UI thread.
+        //
+        // Change the downloadState. Arg is DownloadState.
+        const val EVENT_SET_STATE = 1
+        // Set the download status message. Arg is string.
+        const val EVENT_MESSAGE = 2
+        // Switch to RunAstapFragment. Arg is unused.
+        const val EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT = 3
+
+        const val INVALID_DOWNLOAD_ID: Long = -1
+
+        // The only star database name in use now.
+        // const val STARDB_NAME = STARDB_H17
     }
 
-    // Start downloading H17.
-    private fun startDownloadStarDb() {
-        // https://medium.com/@aungkyawmyint_26195/downloading-file-properly-in-android-d8cc28d25aca
-        val context = requireContext()
-        val srcUrl =
-            "https://github.com/yasushi-saito/platesolver-assets/raw/main/${STARDB_NAME}.zip"
-
-        assert(
-            downloadStarDbRequestId == INVALID_DOWNLOAD_ID &&
-                    downloadState.status == DownloadStatus.IDLE ||
-                    downloadState.status == DownloadStatus.DONE ||
-                    downloadState.status == DownloadStatus.ERROR
-        ) {
-            Log.e(TAG, "download id=$downloadStarDbRequestId state=$downloadState")
-        }
-
-        getStarDbDir(context, STARDB_NAME).mkdirs()
-
-        val readyPath = getStarDbReadyPath(context, STARDB_NAME)
-        if (readyPath.exists()) {
-            Log.d(TAG, "deleting $readyPath")
-            readyPath.delete()
-        }
-        if (starDbZipPath.exists()) {
-            Log.d(TAG, "deleting $starDbZipPath")
-            starDbZipPath.delete()
-        }
-
-        val request = DownloadManager.Request(Uri.parse(srcUrl))
-            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_HIDDEN)// Visibility of the download Notification
-            .setDestinationUri(Uri.fromFile(starDbZipPath))
-            .setTitle("h17.zip")
-            .setDescription("Downloading h17.zip")
-            .setAllowedOverRoaming(false)
-        val downloadManager =
-            requireActivity().getSystemService(DOWNLOAD_SERVICE) as? DownloadManager
-        downloadState = DownloadState(DownloadStatus.DOWNLOADING, "Downloading...")
-        downloadStarDbRequestId = downloadManager!!.enqueue(request)
-        eventHandler.postDelayed(probeDownloadStatusRunner, 2000)
-
-
-        Log.d(TAG, "start downloading $srcUrl to $starDbZipPath, id=$downloadStarDbRequestId")
-        updateView()
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return inflater.inflate(R.layout.fragment_settings, container, false)
     }
 
-    // Cancel downloading H17.
-    //
-    // REQUIRES: download is currently running.
-    private fun cancelDownloadStarDb() {
-        assert(downloadStarDbRequestId != INVALID_DOWNLOAD_ID)
-        downloadManager.remove(downloadStarDbRequestId)
-        eventHandler.removeCallbacks(probeDownloadStatusRunner)
-        Log.d(TAG, "Canceled download")
-        downloadState = DownloadState(DownloadStatus.ERROR, "Canceled")
-        updateView()
+    private enum class DownloadStatus {
+        IDLE,
+        DOWNLOADING,
+        DOWNLOADED,
+        EXPANDING,
+        DONE,
+        ERROR
     }
 
-    // Update the state of the button and texts to match downloadState.
-    private fun updateView() {
-        val setButton = fun(text_id: Int, enabled: Boolean, progress: Int) {
-            downloadStarDbButton.setText(text_id)
-            downloadStarDbButton.isEnabled = enabled
-            downloadProgressBar.visibility = progress
-        }
-        Log.d(TAG, "updateView downloadState=$downloadState")
-        downloadMessageTextView.text = downloadState.message
-        when (downloadState.status) {
-            DownloadStatus.IDLE -> {
-                setButton(R.string.settings_install_stardb, true, View.INVISIBLE)
-            }
-            DownloadStatus.DOWNLOADING -> {
-                setButton(R.string.cancel_download, true, View.VISIBLE)
-            }
-            DownloadStatus.DOWNLOADED -> {
-                setButton(R.string.cancel_download, false, View.VISIBLE)
+    private data class DownloadState(val status: DownloadStatus, val message: String)
 
-                downloadState = DownloadState(DownloadStatus.EXPANDING, "Expanding zip file...")
-                updateView()
-                Thread {
-                    try {
-                        val cmdline = arrayOf("unzip", "-o", starDbZipPath.path)
-                        Log.d(TAG, "Running ${cmdline.joinToString()}")
-                        val proc = Runtime.getRuntime().exec(
-                            cmdline,
-                            null,
-                            starDbZipPath.parentFile
-                        )
-                        val exitCode = proc.waitFor()
-                        if (exitCode != 0) {
-                            throw Exception("unzip failed with exit code $exitCode")
-                        }
-                        Log.d(TAG, "unzip finished successfully")
-                        val readyPath = File(starDbZipPath.parentFile, "ready.txt")
-                        readyPath.writeBytes("ready".toByteArray())
-                        sendMessage(DownloadStatus.DONE, "Stardb installed successfully")
-                        eventHandler.sendMessage(
-                            Message.obtain(eventHandler, EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT, null)
-                        )
-                    } catch (ex: Exception) {
-                        Log.e(TAG, "expand: exception $ex")
-                        sendMessage(DownloadStatus.ERROR, "exception: $ex")
-                    }
-                }.start()
-            }
-            DownloadStatus.EXPANDING -> {
-                setButton(R.string.cancel_download, false, View.VISIBLE)
-            }
-            DownloadStatus.DONE -> {
-                setButton(R.string.settings_reinstall_stardb, true, View.INVISIBLE)
-            }
-            DownloadStatus.ERROR -> {
-                setButton(R.string.settings_retry_install_stardb, true, View.INVISIBLE)
-            }
-        }
+    private lateinit var h18Downloader: Downloader
+    private lateinit var v17Downloader: Downloader
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // starDbZipPath = getStarDbZipPath(requireContext(), STARDB_NAME)
+
+        val versionText = view.findViewById<TextView>(R.id.text_settings_version)
+        versionText.setText("Platesolver version ${BuildConfig.VERSION_NAME}")
+
+        h18Downloader = Downloader(
+            requireActivity(),
+            STARDB_H18,
+            view.findViewById<Button>(R.id.button_settings_download_h18),
+            view.findViewById<ProgressBar>(R.id.progress_settings_download_h18),
+            view.findViewById<TextView>(R.id.text_settings_download_message_h18)
+        )
+
+        v17Downloader = Downloader(
+            requireActivity(),
+            STARDB_V17,
+            view.findViewById<Button>(R.id.button_settings_download_v17),
+            view.findViewById<ProgressBar>(R.id.progress_settings_download_v17),
+            view.findViewById<TextView>(R.id.text_settings_download_message_v17)
+        )
     }
 }
