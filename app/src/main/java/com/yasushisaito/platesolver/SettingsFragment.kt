@@ -110,7 +110,7 @@ private class Downloader(
             when (state.status) {
                 DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> {
                     if (isStarDbInstalled(context, dbName)) {
-                        val dialog = AlertDialog.Builder(context)
+                        val dialog = AlertDialog.Builder(context, R.style.Theme_AlertDialog)
                             .setMessage("Do you really want to delete the local copy of the database and reinstall?")
                             .setTitle("Reinstall star DB")
                             .setPositiveButton(R.string.reinstall) { _, _ -> startDownloadStarDb() }
@@ -150,7 +150,7 @@ private class Downloader(
     private fun startDownloadStarDb() {
         // https://medium.com/@aungkyawmyint_26195/downloading-file-properly-in-android-d8cc28d25aca
         val srcUrl =
-            "https://github.com/yasushi-saito/platesolver-assets/raw/main/${dbName}.zip"
+            "https://storage.googleapis.com/yazsaito/platesolver-assets/${dbName}.zip"
 
         assert(
             requestId == INVALID_DOWNLOAD_ID &&
@@ -238,10 +238,7 @@ private class Downloader(
                         Log.d(TAG, "unzip finished successfully")
                         val readyPath = getStarDbReadyPath(context, dbName)
                         readyPath.writeBytes("ready".toByteArray())
-                        sendMessage(DownloadStatus.DONE, "Stardb installed successfully")
-                        //eventHandler.sendMessage(
-                        //Message.obtain(eventHandler, EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT, null)
-                        //)
+                        sendMessage(DownloadStatus.DONE, "Installed successfully")
                     } catch (ex: Exception) {
                         Log.e(TAG, "expand: exception $ex")
                         sendMessage(DownloadStatus.ERROR, "exception: $ex")
