@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import java.io.*
+import java.lang.Integer.min
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.ArrayList
@@ -223,22 +224,16 @@ class AstapRunner(
         val readOutputs = fun(stream: InputStream, out: OutputStream): Thread {
             val thread = Thread {
                 val output = StringBuilder()
+                val buf = ByteArray(4192)
                 try {
-                    val scanner = Scanner(stream)
-                    while (scanner.hasNextLine()) {
-                        val line = scanner.nextLine()
-                        output.appendLine(line)
-                        out.write("${line}\n".toByteArray())
+                    while (true) {
+                        var nWant = stream.available()
+                        if (nWant <= 0) nWant = 1
+                        val nRead = stream.read(buf, 0, min(nWant, buf.size))
+                        if (nRead < 0) break
+                        output.append(String(buf, 0, nRead))
                         onMessage(output.toString())
                     }
-                /*
-                    while (true) {
-                        val len = stream.read(buf)
-                        if (len < 0) break
-                        System.out.write(buf, 0, len)
-                        out.write(buf)
-                    }
-                 */
                 } catch (e: Exception) {
                     Log.e(TAG, "output reader: $e (ignored)")
                 }

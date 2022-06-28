@@ -110,7 +110,7 @@ private class Downloader(
             when (state.status) {
                 DownloadStatus.IDLE, DownloadStatus.DONE, DownloadStatus.ERROR -> {
                     if (isStarDbInstalled(context, dbName)) {
-                        val dialog = AlertDialog.Builder(context, R.style.Theme_AlertDialog)
+                        val dialog = AlertDialog.Builder(context)
                             .setMessage("Do you really want to delete the local copy of the database and reinstall?")
                             .setTitle("Reinstall star DB")
                             .setPositiveButton(R.string.reinstall) { _, _ -> startDownloadStarDb() }
@@ -164,11 +164,13 @@ private class Downloader(
         getStarDbDir(context, dbName).mkdirs()
 
         val readyPath = getStarDbReadyPath(context, dbName)
+        Log.d(TAG, "readypath: ${readyPath} exists=${readyPath.exists()}")
         if (readyPath.exists()) {
             Log.d(TAG, "deleting $readyPath")
             readyPath.delete()
         }
         val dbZipPath =getStarDbZipPath(context, dbName)
+        Log.d(TAG, "readypath: ${dbZipPath} exists=${dbZipPath.exists()}")
         if (dbZipPath.exists()) {
             Log.d(TAG, "deleting $dbZipPath")
             dbZipPath.delete()

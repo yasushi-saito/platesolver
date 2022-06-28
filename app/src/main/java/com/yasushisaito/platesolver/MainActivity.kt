@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                         FragmentType.valueOf(fragName),
                         args
                     )
-                    add(R.id.content_frame, frag, fragName)
+                    replace(R.id.content_frame, frag, fragName)
                 }
             }
         } else {
