@@ -5,8 +5,12 @@ import java.io.DataOutputStream
 import java.security.MessageDigest
 
 data class SolverParameters(
-    // The image pathname in the local file system.
+    // The user-specified file is copied to an app-specific directory with
+    // its contents hash as the filename. imagePath specifies the
+    // The image pathname the file's path inside the app-specific directory.
     val imagePath: String,
+    // The filename of the original file. Used only for display.
+    val imageFilename: String,
     // Assumed field of view of the whole image, in degrees.
     val fovDeg: Double,
     // The (ra, dec) to start searching from.

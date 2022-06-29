@@ -37,7 +37,6 @@ private fun isEmulator(): Boolean {
 // Thread safe.
 class AstapRunner(
     val context: Context,
-    val imageName: String,
     val solverParams: SolverParameters,
     // The destination path of the final .json file
     val solutionJsonPath: File,
@@ -145,7 +144,6 @@ class AstapRunner(
                     refPixel = refPixel,
                     refWcs = refCel,
                     imageDimension = dim,
-                    imageName = imageName,
                     pixelToWcsMatrix = pixelToWcsMatrix,
                     matchedStars = validMatchedStars,
                     trueFovDeg=trueFovDeg

@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     fun refreshSolutionMenuItems() {
         val addSolutionMenuItem = fun(e: SolutionSet.Entry) {
             val modTime = Instant.ofEpochMilli(e.modTime)
-            val text ="${e.solution!!.imageName}\n${modTime}"
+            val text ="${e.solution!!.params.imageFilename}\n${modTime}"
             pastSolutionsSubmenu.add(
                 Menu.NONE,
                 SOLUTION_MENU_ITEM_ID + e.id,

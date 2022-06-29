@@ -12,8 +12,6 @@ data class Solution(
     // The value is typically different from params.fov, which is the
     // user-reported FOV value.
     val trueFovDeg: Double,
-    // The user-defined filename of the image
-    val imageName: String,
     val imageDimension: ImageDimension,
     val refPixel: PixelCoordinate,
     val refWcs: CelestialCoordinate,
@@ -21,7 +19,7 @@ data class Solution(
     val matchedStars: ArrayList<WellKnownDso>,
 ) {
     companion object {
-        const val CURRENT_VERSION = "20220620"
+        const val CURRENT_VERSION = "20220628"
     }
     private val wcsToPixelMatrix = pixelToWcsMatrix.invert()
 

@@ -33,14 +33,10 @@ class ResultFragment : Fragment() {
             view.findViewById<TextView>(viewId).text = value
         }
 
-        setText(
-            R.id.text_result_imagedimension,
-            "%dw %dh".format(solution.imageDimension.width, solution.imageDimension.height)
-        )
         val imagePath = File(solution.params.imagePath)
         val modTime = Instant.ofEpochMilli(imagePath.lastModified())
         setText(R.id.text_result_imagelastupdate, modTime.toString())
-        setText(R.id.text_result_imagename, solution.imageName)
+        setText(R.id.text_result_imagename, solution.params.imageFilename)
         setText(R.id.text_result_fov_deg, "%.02f".format(solution.trueFovDeg))
 
         class SeekBarListener : SeekBar.OnSeekBarChangeListener {

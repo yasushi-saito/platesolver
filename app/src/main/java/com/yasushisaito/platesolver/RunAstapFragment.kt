@@ -9,8 +9,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.Log
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -24,7 +22,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
-import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 import kotlin.math.atan
 import kotlin.math.tan
@@ -370,9 +367,14 @@ class RunAstapFragment : Fragment() {
             isValidFovDeg(fovDeg) && imagePath != null && WellKnownDsoSet.getSingleton() != null
     }
 
-    private var dialog: AstapRunnerDialogFragment? = null
+    private data class LoadedImage(val imagePath: File, val imageFilename: String)
+    private data class DialogParams(val params: SolverParameters, val astapRunner: AstapRunner)
+
+    var dialog: AstapRunnerDialogFragment? = null
 
     private val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
+        Log.d(TAG, "event msg=$msg")
+
         when (msg.what) {
             EVENT_MESSAGE -> {
                 dialog?.setMessage(msg.obj as String)
@@ -395,25 +397,33 @@ class RunAstapFragment : Fragment() {
                 updateView()
             }
             EVENT_SHOW_DIALOG -> {
-                dialog?.show(childFragmentManager, null)
+                dialog?.dismiss()
+                val params = msg.obj as DialogParams
+                dialog = AstapRunnerDialogFragment(
+                    onAbort = {
+                        params.astapRunner.abort()
+                    },
+                    fovDeg = params.params.fovDeg,
+                    imageName = params.params.imageFilename,
+                    searchOrigin = params.params.startSearch,
+                )
+                dialog!!.show(childFragmentManager, null)
             }
             EVENT_SUSPEND_DIALOG -> {
                 dialog?.setError((msg.obj as? String)!!)
                 dialog?.suspend()
             }
             EVENT_IMAGE_LOADED -> {
-                val param = (msg.obj as? LoadedImage)!!
-                imagePath = param.imagePath
-                imageFilename = param.imageFilename
-                imageView.setImage(param.imagePath.absolutePath)
+                val params = msg.obj as LoadedImage
+                imagePath = params.imagePath
+                imageFilename = params.imageFilename
+                imageView.setImage(params.imagePath.absolutePath)
                 updateView()
             }
             else -> throw Exception("Invalid message $msg")
         }
         true
     }
-
-    data class LoadedImage(val imagePath: File, val imageFilename: String)
 
     private fun sendMessage(what: Int, message: Any) {
         eventHandler.sendMessage(
@@ -427,31 +437,15 @@ class RunAstapFragment : Fragment() {
         ) { Log.e(TAG, "fovDeg=$fovDeg, imagePath=$imagePath") }
 
         val activity = requireActivity()
-        val astapRunnerMu = ReentrantLock()
-        var astapRunner: AstapRunner? = null
 
-        val thisImagePath = imagePath!!
-        val thisImageFilename = imageFilename!!
-        val thisFovDeg = fovDeg
-        val thisDbType = dbType
-        val thisStartSearchDso = startSearch
+        val solverParams = SolverParameters(
+            imagePath = imagePath!!.absolutePath,
+            imageFilename = imageFilename!!,
+            fovDeg = fovDeg,
+            startSearch = startSearch?.cel,
+            dbName = dbType ?: getDbTypeFromFov(requireContext(), fovDeg))
 
-        dialog = AstapRunnerDialogFragment(
-            onAbort = {
-                astapRunnerMu.withLock {
-                    astapRunner?.abort()
-                }
-            },
-            fovDeg = thisFovDeg,
-            imageName = thisImageFilename,
-            searchOrigin = thisStartSearchDso?.cel
-        )
         Thread(Runnable {
-            val solverParams = SolverParameters(
-                thisImagePath.absolutePath,
-                thisFovDeg,
-                thisStartSearchDso?.cel,
-                thisDbType ?: getDbTypeFromFov(requireContext(), thisFovDeg))
             val solutionJsonPath =
                 File(getSolutionDir(activity), "${solverParams.hashString()}.json")
 
@@ -466,18 +460,15 @@ class RunAstapFragment : Fragment() {
             try {
                 sendMessage(EVENT_MESSAGE, "Running astap...")
                 // The solution json doesn't exist yet. Run astap_cli.
-                astapRunnerMu.withLock {
-                    astapRunner = AstapRunner(
-                        context = requireContext(),
-                        solutionJsonPath = solutionJsonPath,
-                        solverParams = solverParams,
-                        imageName = thisImageFilename,
-                        onMessage = { message -> sendMessage(EVENT_MESSAGE, message) }
-                    )
-                }
-                sendMessage(EVENT_SHOW_DIALOG, "" as Any)
+                val astapRunner = AstapRunner(
+                    context = requireContext(),
+                    solutionJsonPath = solutionJsonPath,
+                    solverParams = solverParams,
+                    onMessage = { message -> sendMessage(EVENT_MESSAGE, message) }
+                )
+                sendMessage(EVENT_SHOW_DIALOG, DialogParams(params=solverParams, astapRunner=astapRunner))
                 sendMessage(EVENT_MESSAGE, "running Astap...")
-                val result = astapRunner!!.run()
+                val result = astapRunner.run()
                 Log.d(TAG, "astap finished: exitCode=${result.exitCode} error=${result.error}")
                 val errorMessage: String? = when {
                     result.error != "" -> result.error

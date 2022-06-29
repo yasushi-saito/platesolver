@@ -39,28 +39,9 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/image"
-        app:layout_constraintBottom_toTopOf="@+id/label_imagedimension"
+        app:layout_constraintBottom_toTopOf="@+id/label_last_update"
         app:layout_constraintStart_toStartOf="@+id/guideline_left0"
         tools:text="Image" />
-
-    <TextView
-        android:id="@+id/label_imagedimension"
-        style="@style/HeaderText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/dimension"
-        app:layout_constraintBottom_toTopOf="@+id/label_imagedimension2"
-        app:layout_constraintStart_toStartOf="@+id/guideline_left1" />
-
-    <TextView
-        android:id="@+id/label_lastupdate"
-        style="@style/HeaderText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="@+id/guideline_left1"
-        app:layout_constraintTop_toBottomOf="@+id/label_imagedimension" />
 
     <androidx.constraintlayout.widget.Guideline
         android:id="@+id/guideline_left1"
@@ -70,7 +51,7 @@
         app:layout_constraintGuide_begin="51dp" />
 
     <TextView
-        android:id="@+id/label_imagedimension2"
+        android:id="@+id/label_last_update"
         style="@style/HeaderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -104,19 +85,11 @@
         app:layout_constraintGuide_begin="162dp" />
 
     <TextView
-        android:id="@+id/text_result_imagedimension"
-        style="@style/BodyText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBaseline_toBaselineOf="@+id/label_imagedimension"
-        app:layout_constraintStart_toStartOf="@+id/guideline2" />
-
-    <TextView
         android:id="@+id/text_result_imagelastupdate"
         style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintBaseline_toBaselineOf="@+id/label_imagedimension2"
+        app:layout_constraintBaseline_toBaselineOf="@+id/label_last_update"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
