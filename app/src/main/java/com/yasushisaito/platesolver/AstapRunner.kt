@@ -6,7 +6,6 @@ import android.util.Log
 import com.google.gson.Gson
 import java.io.*
 import java.lang.Integer.min
-import java.util.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
@@ -142,9 +141,9 @@ class AstapRunner(
                     version = Solution.CURRENT_VERSION,
                     params = solverParams,
                     refPixel = refPixel,
-                    refWcs = refCel,
+                    refCelestial = refCel,
                     imageDimension = dim,
-                    pixelToWcsMatrix = pixelToWcsMatrix,
+                    pixelToCelestialMatrix = pixelToWcsMatrix,
                     matchedStars = validMatchedStars,
                     trueFovDeg=trueFovDeg
                 )

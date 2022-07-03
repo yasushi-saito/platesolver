@@ -22,7 +22,6 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
-import kotlin.concurrent.withLock
 import kotlin.math.atan
 import kotlin.math.tan
 
@@ -51,21 +50,17 @@ private fun updateEditText(edit: EditText, value: String) {
 }
 
 private fun setOnChangeListener(edit: EditText, cb: (value: String) -> Unit) {
-    edit.setOnEditorActionListener(object: TextView.OnEditorActionListener {
-        override fun onEditorAction(p0: TextView?, p1: Int, p2: KeyEvent?): Boolean {
-            val value = edit.text.toString()
-            Log.d("EditText", "action p1=$p1 val=$value")
-            cb(value)
-            return false
-        }
-    })
-    edit.setOnFocusChangeListener(object: View.OnFocusChangeListener {
-        override fun onFocusChange(p0: View?, p1: Boolean) {
-            val value = edit.text.toString()
-            Log.d("EditText", "focus $p1 val=$value")
-            if (!p1) cb(value)
-        }
-    })
+    edit.setOnEditorActionListener { p0, p1, p2 ->
+        val value = edit.text.toString()
+        Log.d("EditText", "action p1=$p1 val=$value")
+        cb(value)
+        false
+    }
+    edit.onFocusChangeListener = View.OnFocusChangeListener { p0, p1 ->
+        val value = edit.text.toString()
+        Log.d("EditText", "focus $p1 val=$value")
+        if (!p1) cb(value)
+    }
 }
 
 private fun getDbTypeFromFov(context: Context, fovDeg: Double) : String {
@@ -235,7 +230,7 @@ class RunAstapFragment : Fragment() {
             dbTypes.add(STARDB_W08)
         }
         dbTypeSpinner = view.findViewById(R.id.spinner_astap_db_type)
-        dbTypeSpinner.adapter = ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_dropdown_item, dbDescriptions)
+        dbTypeSpinner.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, dbDescriptions)
         dbTypeSpinner.onItemSelectedListener = object: AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
                 Log.d(TAG, "Selected: pos=${pos} id=${id}")
@@ -370,7 +365,7 @@ class RunAstapFragment : Fragment() {
     private data class LoadedImage(val imagePath: File, val imageFilename: String)
     private data class DialogParams(val params: SolverParameters, val astapRunner: AstapRunner)
 
-    var dialog: AstapRunnerDialogFragment? = null
+    private var dialog: AstapRunnerDialogFragment? = null
 
     private val eventHandler = Handler(Looper.getMainLooper()) { msg: Message ->
         Log.d(TAG, "event msg=$msg")

@@ -8,7 +8,6 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.*
-import androidx.core.content.ContextCompat
 import com.skydoves.balloon.Balloon
 import kotlin.math.ceil
 import kotlin.math.cos
@@ -286,7 +285,8 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
             val canvasImageCenterY = canvasImageRect.y.toFloat() / 2f
             translationMatrix.postTranslate(
                 canvasCenterX - canvasImageCenterX,
-                canvasCenterY - canvasImageCenterY)
+                canvasCenterY - canvasImageCenterY
+            )
 
             imageChanged = false
         }
@@ -488,10 +488,11 @@ class AnnotatedImageView(context: Context, attributes: AttributeSet) : View(cont
                 )
                 buf.toString()
             } else {
-                val p = CanvasCoordinate(coord[0].toDouble(), coord[1].toDouble()).toPixelCoordinate(
-                    solution.imageDimension,
-                    CanvasDimension(width, height)
-                )
+                val p =
+                    CanvasCoordinate(coord[0].toDouble(), coord[1].toDouble()).toPixelCoordinate(
+                        solution.imageDimension,
+                        CanvasDimension(width, height)
+                    )
                 val cel = solution.toCelestialCoordinate(p)
                 val buf = StringBuilder()
                 buf.append(

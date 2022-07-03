@@ -164,13 +164,13 @@ private class Downloader(
         getStarDbDir(context, dbName).mkdirs()
 
         val readyPath = getStarDbReadyPath(context, dbName)
-        Log.d(TAG, "readypath: ${readyPath} exists=${readyPath.exists()}")
+        Log.d(TAG, "readypath: $readyPath exists=${readyPath.exists()}")
         if (readyPath.exists()) {
             Log.d(TAG, "deleting $readyPath")
             readyPath.delete()
         }
         val dbZipPath =getStarDbZipPath(context, dbName)
-        Log.d(TAG, "readypath: ${dbZipPath} exists=${dbZipPath.exists()}")
+        Log.d(TAG, "readypath: $dbZipPath exists=${dbZipPath.exists()}")
         if (dbZipPath.exists()) {
             Log.d(TAG, "deleting $dbZipPath")
             dbZipPath.delete()
@@ -322,20 +322,6 @@ private class Downloader(
 class SettingsFragment : Fragment() {
     companion object {
         const val TAG = "SettingsFragment"
-
-        // List of events sent from a DB installation thread to the UI thread.
-        //
-        // Change the downloadState. Arg is DownloadState.
-        const val EVENT_SET_STATE = 1
-        // Set the download status message. Arg is string.
-        const val EVENT_MESSAGE = 2
-        // Switch to RunAstapFragment. Arg is unused.
-        const val EVENT_SWITCH_TO_RUN_ASTAP_FRAGMENT = 3
-
-        const val INVALID_DOWNLOAD_ID: Long = -1
-
-        // The only star database name in use now.
-        // const val STARDB_NAME = STARDB_H17
     }
 
     override fun onCreateView(
@@ -345,17 +331,6 @@ class SettingsFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_settings, container, false)
     }
 
-    private enum class DownloadStatus {
-        IDLE,
-        DOWNLOADING,
-        DOWNLOADED,
-        EXPANDING,
-        DONE,
-        ERROR
-    }
-
-    private data class DownloadState(val status: DownloadStatus, val message: String)
-
     private lateinit var h18Downloader: Downloader
     private lateinit var v17Downloader: Downloader
 
@@ -364,22 +339,22 @@ class SettingsFragment : Fragment() {
         // starDbZipPath = getStarDbZipPath(requireContext(), STARDB_NAME)
 
         val versionText = view.findViewById<TextView>(R.id.text_settings_version)
-        versionText.setText("Platesolver version ${BuildConfig.VERSION_NAME}")
+        versionText.text = "Platesolver version ${BuildConfig.VERSION_NAME}"
 
         h18Downloader = Downloader(
             requireActivity(),
             STARDB_H18,
-            view.findViewById<Button>(R.id.button_settings_download_h18),
-            view.findViewById<ProgressBar>(R.id.progress_settings_download_h18),
-            view.findViewById<TextView>(R.id.text_settings_download_message_h18)
+            view.findViewById(R.id.button_settings_download_h18),
+            view.findViewById(R.id.progress_settings_download_h18),
+            view.findViewById(R.id.text_settings_download_message_h18)
         )
 
         v17Downloader = Downloader(
             requireActivity(),
             STARDB_V17,
-            view.findViewById<Button>(R.id.button_settings_download_v17),
-            view.findViewById<ProgressBar>(R.id.progress_settings_download_v17),
-            view.findViewById<TextView>(R.id.text_settings_download_message_v17)
+            view.findViewById(R.id.button_settings_download_v17),
+            view.findViewById(R.id.progress_settings_download_v17),
+            view.findViewById(R.id.text_settings_download_message_v17)
         )
     }
 }

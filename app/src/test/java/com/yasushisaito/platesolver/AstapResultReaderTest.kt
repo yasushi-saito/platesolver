@@ -34,12 +34,11 @@ class AstapResultReaderTest {
                 wcs.getDouble(AstapResultReader.CD2_1), wcs.getDouble(AstapResultReader.CD2_2)
             )
             val solution = Solution(refPixel=refPixel,
-                params=SolverParameters(imagePath="foo", fovDeg=2.0, startSearch=null),
-                imageName="foo",
+                params=SolverParameters(imagePath="foo", fovDeg=2.0, startSearch=null, dbName="h17", imageFilename="foo.jpg"),
                 version=Solution.CURRENT_VERSION,
-                refWcs=refCel,
+                refCelestial=refCel,
                 imageDimension = dim,
-                pixelToWcsMatrix = pixelToWcsMatrix,
+                pixelToCelestialMatrix = pixelToWcsMatrix,
                 trueFovDeg=3.0,
                 matchedStars = ArrayList())
 

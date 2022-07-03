@@ -14,7 +14,7 @@
         android:layout_width="117dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
-        android:text="@string/degree"
+        android:text="@string/placeholder"
         app:layout_constraintBaseline_toBaselineOf="@+id/text_result_fov_deg"
         app:layout_constraintStart_toEndOf="@+id/text_result_fov_deg" />
 
@@ -30,6 +30,7 @@
         style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="@string/placeholder"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_image"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
@@ -89,6 +90,7 @@
         style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="@string/placeholder"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_last_update"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
@@ -97,6 +99,7 @@
         style="@style/BodyText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:text="@string/placeholder"
         app:layout_constraintBaseline_toBaselineOf="@+id/label_fov"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 

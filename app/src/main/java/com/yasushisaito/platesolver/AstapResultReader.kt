@@ -33,29 +33,11 @@ class AstapResultReader(stream: InputStream) {
         parse(stream)
     }
 
-    fun getBool(key: String): Boolean {
-        for (f in bools) {
-            if (f.key == key) return f.value
-        }
-        throw ParseException("Bool key $key not found", 0)
-    }
-
     fun getDouble(key: String): Double {
         for (f in floats) {
             if (f.key == key) return f.value
         }
         throw ParseException("Double key $key not found", 0)
-    }
-
-    fun getString(key: String): String {
-        for (s in strings) {
-            if (s.key == key) return s.value
-        }
-        throw ParseException("String key $key not found", 0)
-    }
-
-    fun getWarnings(): ArrayList<String> {
-        return warnings
     }
 
     // Parses a FITS input. Each line is of form
